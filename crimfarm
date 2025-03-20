@@ -389,7 +389,7 @@ local runAttackLoop do
             [7] = true
         }
         local result = remote1:InvokeServer(unpack(arg1))
-        task.wait(1)
+        task.wait(0.1)
 
         local tool = me.Character and me.Character:FindFirstChildOfClass("Tool")
         if tool then
