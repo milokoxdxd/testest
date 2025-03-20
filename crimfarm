@@ -676,9 +676,9 @@ local function createTPFarmTargetRow(parent)
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.4, 0, 1, 0)
     label.BackgroundTransparency = 1
-    label.Text = "TP Target:"
+    label.Text = " TP Target:"
     label.TextColor3 = Color3.new(1,1,1)
-    label.Font = Enum.Font.SourceSansSemibold
+    label.Font = Enum.Font.SourceSansBold
     label.TextSize = 16
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = row
