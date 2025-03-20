@@ -95,7 +95,7 @@ UIListLayout.Parent = contentFrame
 --    2. Перетаскивание окна (mainFrame) при удержании ЛКМ
 -------------------------------------------------------------------------------
 do
-    local dragging = false
+    local dragging = true
     local dragOffset = Vector2.new()
 
     mainFrame.InputBegan:Connect(function(input)
