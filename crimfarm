@@ -107,7 +107,7 @@ do
 
     mainFrame.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
+            dragging = true
         end
     end)
 
