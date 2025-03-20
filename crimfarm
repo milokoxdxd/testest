@@ -24,7 +24,7 @@ screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "VenomHubMainFrame"
 mainFrame.Size = UDim2.new(0, 340, 0, 420)
-mainFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
+mainFrame.Position = UDim2.new(0.05, 50, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 mainFrame.BorderSizePixel = 0
 mainFrame.Visible = false -- Domyślnie ukryte
@@ -95,7 +95,7 @@ UIListLayout.Parent = contentFrame
 --    2. Перетаскивание окна (mainFrame) при удержании ЛКМ
 -------------------------------------------------------------------------------
 do
-    local dragging = true
+    local dragging = false
     local dragOffset = Vector2.new()
 
     mainFrame.InputBegan:Connect(function(input)
@@ -107,7 +107,7 @@ do
 
     mainFrame.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
+            dragging = false
         end
     end)
 
@@ -706,7 +706,7 @@ end
 -- 1) Fly
 createToggleRow(
     contentFrame,
-    "Fly",
+    " Fly",
     true,
     function() return Fly_Enabled end,
     Fly_Enable,
@@ -720,7 +720,7 @@ do
     local adminCheckBind = nil
     createToggleRow(
         contentFrame,
-        "Admin Check",
+        " Admin Check",
         true,
         function() return AdminCheck_Enabled end,
         AdminCheck_Enable,
@@ -735,7 +735,7 @@ do
     local meleeBind = nil
     createToggleRow(
         contentFrame,
-        "Melee Aura 4 Alt MAX!",
+        " Melee Aura",
         true,
         function() return MeleeAura_Enabled end,
         MeleeAura_Enable,
@@ -750,7 +750,7 @@ do
     local tpBind = nil
     createToggleRow(
         contentFrame,
-        "Teleport Farm",
+        " Teleport Farm",
         true,
         function() return TPFarm_Enabled end,
         TPFarm_Enable,
@@ -766,7 +766,7 @@ do
     local scBind = nil
     createToggleRow(
         contentFrame,
-        "Save EQR PLACE",
+        " Save EQR PLACE",
         true,
         function() return SaveCube_Enabled end,
         SaveCube_Enable,
