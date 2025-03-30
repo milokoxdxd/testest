@@ -121,7 +121,7 @@ tweenOpen:Play()
 
 -- Funkcja sprawdzająca klucz
 local function checkKey(key)
-    local validKeys = {"examplekey1", "examplekey2"} -- Dodaj swoje klucze tutaj
+    local validKeys = {"yourkeyisherescnitsel", "eqr"} -- Dodaj swoje klucze tutaj
     for _, validKey in ipairs(validKeys) do
         if key == validKey then
             return true
