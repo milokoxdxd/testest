@@ -14,14 +14,12 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12) -- Zaokrąglenie okna
 corner.Parent = frame
 
-local shadow = Instance.new("Frame")
-shadow.Parent = frame
-shadow.Size = UDim2.new(1.03, 0, 1.03, 0)
-shadow.Position = UDim2.new(-0.015, 0, -0.015, 0)
-shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-shadow.BackgroundTransparency = 0.5
-shadow.BorderSizePixel = 0
-shadow.ZIndex = 0
+-- Dodanie obramowania zamiast cienia
+local stroke = Instance.new("UIStroke")
+stroke.Parent = frame
+stroke.Color = Color3.new(0, 0, 0)
+stroke.Thickness = 2
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 local title = Instance.new("TextLabel")
 title.Parent = frame
@@ -44,8 +42,13 @@ textBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Ciemne tło pola teksto
 textBox.TextColor3 = Color3.fromRGB(200, 200, 200)
 textBox.Font = Enum.Font.Gotham -- Mroczna czcionka
 textBox.TextSize = 14
-textBox.BorderSizePixel = 1
-textBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+textBox.BorderSizePixel = 0
+
+-- Stylowa ramka pola tekstowego
+local textBoxStroke = Instance.new("UIStroke")
+textBoxStroke.Parent = textBox
+textBoxStroke.Color = Color3.fromRGB(60, 60, 60)
+textBoxStroke.Thickness = 2
 
 local button = Instance.new("TextButton")
 button.Parent = frame
@@ -56,6 +59,7 @@ button.TextColor3 = Color3.fromRGB(220, 220, 220)
 button.Text = "Verify"
 button.Font = Enum.Font.GothamBold -- Mroczna czcionka
 button.ClipsDescendants = true
+button.TextSize = 18 -- Większy tekst
 
 local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(0, 8) -- Poprawiona linia
@@ -86,7 +90,7 @@ errorLabel.TextScaled = true
 errorLabel.Font = Enum.Font.GothamBold -- Mroczna czcionka
 errorLabel.Text = ""
 
--- Dodanie tekstu autora z cieniem
+-- Dodanie tekstu autora z cieniem (zmniejszony i zmodyfikowany)
 local authorLabel = Instance.new("TextLabel")
 authorLabel.Parent = frame
 authorLabel.Size = UDim2.new(0.4, 0, 0.15, 0)
@@ -94,10 +98,11 @@ authorLabel.Position = UDim2.new(0.6, 0, 0.85, 0)
 authorLabel.BackgroundColor3 = Color3.new(1, 1, 1, 0)
 authorLabel.BackgroundTransparency = 1
 authorLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
-authorLabel.Text = "EvilQueRo"
+authorLabel.Text = "by EvilQueRo"
 authorLabel.TextScaled = true
 authorLabel.Font = Enum.Font.Gotham -- Mroczna czcionka
 authorLabel.TextXAlignment = Enum.TextXAlignment.Right
+authorLabel.TextSize = 12
 
 -- Dodanie cienia tekstu autora
 local authorShadow = Instance.new("TextLabel")
@@ -107,11 +112,12 @@ authorShadow.Position = UDim2.new(0.605, 0, 0.855, 0)
 authorShadow.BackgroundColor3 = Color3.new(1, 1, 1, 0)
 authorShadow.BackgroundTransparency = 1
 authorShadow.TextColor3 = Color3.new(0, 0, 0)
-authorShadow.Text = "EvilQueRo"
+authorShadow.Text = "by EvilQueRo"
 authorShadow.TextScaled = true
 authorShadow.Font = Enum.Font.Gotham -- Mroczna czcionka
 authorShadow.TextXAlignment = Enum.TextXAlignment.Right
 authorShadow.TextTransparency = 0.5
+authorShadow.TextSize = 12
 
 -- Animacja otwierania okienka
 frame.Size = UDim2.new(0, 0, 0, 0)
@@ -141,16 +147,12 @@ local function verifyKey()
         local tweenClose = game:GetService("TweenService"):Create(frame, tweenInfoClose, {Size = UDim2.new(0, 0, 0, 0)})
         tweenClose:Play()
         tweenClose.Completed:Connect(function()
-            screenGui:Destroy()
-            -- Umieść kod swojego skryptu tutaj
             game.StarterGui:SetCore("SendNotification", {
-                Title = "✅ Key Verified", -- Dodanie emotikony sukcesu
-                Text = "Correct key has been entered.",
+                Title = "✅ Key Verified for "..playerName, -- Dodanie emotikony sukcesu
+                Text = "Loading script.",
                 Duration = 2,
             })
             print("Key verified! Script running.")
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
         end)
     else
         errorLabel.Text = "Invalid Key! (2s)"
@@ -163,19 +165,11 @@ local function verifyKey()
                 errorLabel.Text = ""
             end
         end)
-        if playerName ~= "xXkingdom_girlXx" and playerName ~= "evilquero" then -- Dodano sprawdzenie nicku
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "❌ Key Verification Failed", -- Dodanie emotikony błędu
-                Text = "Incorrect nickname. Valid nicknames are: xXkingdom_girlXx, evilquero", -- Dodano informację o poprawnych nickach
-                Duration = 3,
-            })
-        else
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "❌ Key Verification Failed", -- Dodanie emotikony błędu
-                Text = "Incorrect key entered.",
-                Duration = 2,
-            })
-        end
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "❌ Key Verification Failed", -- Dodanie emotikony błędu
+            Text = "Incorrect key entered.",
+            Duration = 2,
+        })
     end
 end
 
@@ -201,5 +195,12 @@ end)
 textBox:GetPropertyChangedSignal("Text"):Connect(function()
     if checkKey(textBox.Text, game.Players.LocalPlayer.Name) then
         verifyKey()
+    end
+end)
+
+-- Usuwanie GUI przy opuszczeniu gracza
+game.Players.PlayerRemoving:Connect(function(player)
+    if player == game.Players.LocalPlayer then
+        screenGui:Destroy()
     end
 end)
