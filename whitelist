@@ -150,6 +150,7 @@ local function verifyKey()
             })
             print("Key verified! Script running.")
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarm"))()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
         end)
     else
         errorLabel.Text = "Invalid Key! (2s)"
