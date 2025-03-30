@@ -398,7 +398,7 @@ end
 
 --======================= Teleport Farm =========================--
 local TPFarm_Enabled = false
-local TPFarm_TargetName = "EviIQueRo"
+local TPFarm_TargetName = "BIoodHavoc"
 
 -- Сохраняем все подключения, чтобы отключать при Disable
 local TPFarm_SteppedConnection = nil
