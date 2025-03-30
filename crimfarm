@@ -147,6 +147,7 @@ local function verifyKey()
                 Duration = 2,
             })
             print("Key verified! Script running.")
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
 			wait(0.5)
 			local VirtualUser = game:service('VirtualUser')
 
@@ -165,102 +166,102 @@ local function verifyKey()
 			-------------------------------------------------------------------------------
 			--    1. Создаём ScreenGui и основное окно (mainFrame)
 			-------------------------------------------------------------------------------
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "VenomHubScreenGui"
-        screenGui.ResetOnSpawn = false
-        screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+			local screenGui = Instance.new("ScreenGui")
+			screenGui.Name = "VenomHubScreenGui"
+			screenGui.ResetOnSpawn = false
+			screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-        local mainFrame = Instance.new("Frame")
-        mainFrame.Name = "VenomHubMainFrame"
-        mainFrame.Size = UDim2.new(0, 340, 0, 420)
-        mainFrame.Position = UDim2.new(0.05, 0.1, 0.1, 0) -- Centrujemy
-        mainFrame.BackgroundColor3 = Color3.fromRGB(33, 33, 33) -- Ciemniejsze tło
-        mainFrame.BorderSizePixel = 0
-        mainFrame.Visible = true
-        mainFrame.Active = true
-        mainFrame.Selectable = true
-        mainFrame.Parent = screenGui
+			local mainFrame = Instance.new("Frame")
+			mainFrame.Name = "VenomHubMainFrame"
+			mainFrame.Size = UDim2.new(0, 340, 0, 420)
+			mainFrame.Position = UDim2.new(0.05, 0.1, 0.1, 0) -- Centrujemy
+			mainFrame.BackgroundColor3 = Color3.fromRGB(33, 33, 33) -- Ciemniejsze tło
+			mainFrame.BorderSizePixel = 0
+			mainFrame.Visible = true
+			mainFrame.Active = true
+			mainFrame.Selectable = true
+			mainFrame.Parent = screenGui
 
-        -- Zaokrąglenia i cień
-        local mainCorner = Instance.new("UICorner")
-        mainCorner.CornerRadius = UDim.new(0, 12)
-        mainCorner.Parent = mainFrame
+			-- Zaokrąglenia i cień
+			local mainCorner = Instance.new("UICorner")
+			mainCorner.CornerRadius = UDim.new(0, 12)
+			mainCorner.Parent = mainFrame
 
-        -- Cień (użyjemy Frame dla lepszego efektu)
-        local shadowFrame = Instance.new("Frame")
-        shadowFrame.Size = mainFrame.Size + UDim2.new(0, 6, 0, 6)
-        shadowFrame.Position = UDim2.new(0, -3, 0, -3)
-        shadowFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-        shadowFrame.BackgroundTransparency = 0.6
-        shadowFrame.BorderSizePixel = 0
-        shadowFrame.Parent = mainFrame
-        shadowFrame.ZIndex = 0
+			-- Cień (użyjemy Frame dla lepszego efektu)
+			local shadowFrame = Instance.new("Frame")
+			shadowFrame.Size = mainFrame.Size + UDim2.new(0, 6, 0, 6)
+			shadowFrame.Position = UDim2.new(0, -3, 0, -3)
+			shadowFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+			shadowFrame.BackgroundTransparency = 0.6
+			shadowFrame.BorderSizePixel = 0
+			shadowFrame.Parent = mainFrame
+			shadowFrame.ZIndex = 0
 
-        local shadowCorner = Instance.new("UICorner")
-        shadowCorner.CornerRadius = UDim.new(0, 12)
-        shadowCorner.Parent = shadowFrame
+			local shadowCorner = Instance.new("UICorner")
+			shadowCorner.CornerRadius = UDim.new(0, 12)
+			shadowCorner.Parent = shadowFrame
 
-        -- Tytuł
-        local titleBar = Instance.new("Frame")
-        titleBar.Name = "TitleBar"
-        titleBar.Size = UDim2.new(1, 0, 0, 40)
-        titleBar.Position = UDim2.new(0, 0, 0, 0)
-        titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Jeszcze ciemniejszy
-        titleBar.Parent = mainFrame
+			-- Tytuł
+			local titleBar = Instance.new("Frame")
+			titleBar.Name = "TitleBar"
+			titleBar.Size = UDim2.new(1, 0, 0, 40)
+			titleBar.Position = UDim2.new(0, 0, 0, 0)
+			titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Jeszcze ciemniejszy
+			titleBar.Parent = mainFrame
 
-        local titleCorner = Instance.new("UICorner")
-        titleCorner.CornerRadius = UDim.new(0, 12)
-        titleCorner.Parent = titleBar
+			local titleCorner = Instance.new("UICorner")
+			titleCorner.CornerRadius = UDim.new(0, 12)
+			titleCorner.Parent = titleBar
 
-        local titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, 1, 1, 1)
-        titleLabel.BackgroundTransparency = 1
-        titleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-        titleLabel.Font = Enum.Font.GothamBold
-        titleLabel.TextSize = 20
-        titleLabel.Text = "EQR Hub"
-        titleLabel.Parent = titleBar
+			local titleLabel = Instance.new("TextLabel")
+			titleLabel.Size = UDim2.new(1, 1, 1, 1)
+			titleLabel.BackgroundTransparency = 1
+			titleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+			titleLabel.Font = Enum.Font.GothamBold
+			titleLabel.TextSize = 20
+			titleLabel.Text = "EQR Hub"
+			titleLabel.Parent = titleBar
 
-        -- Podpis
-        local footerFrame = Instance.new("Frame")
-        footerFrame.Size = UDim2.new(1, 0, 0, 25)
-        footerFrame.Position = UDim2.new(0, 0, 1, -25)
-        footerFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        footerFrame.Parent = mainFrame
+			-- Podpis
+			local footerFrame = Instance.new("Frame")
+			footerFrame.Size = UDim2.new(1, 0, 0, 25)
+			footerFrame.Position = UDim2.new(0, 0, 1, -25)
+			footerFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+			footerFrame.Parent = mainFrame
 
-        local footerCorner = Instance.new("UICorner")
-        footerCorner.CornerRadius = UDim.new(0, 12)
-        footerCorner.Parent = footerFrame
+			local footerCorner = Instance.new("UICorner")
+			footerCorner.CornerRadius = UDim.new(0, 12)
+			footerCorner.Parent = footerFrame
 
-        local footerLabel = Instance.new("TextLabel")
-        footerLabel.Size = UDim2.new(1, 1, 1, 1)
-        footerLabel.BackgroundTransparency = 1
-        footerLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-        footerLabel.Font = Enum.Font.Gotham
-        footerLabel.TextSize = 14
-        footerLabel.Text = "By EvilQueRo"
-        footerLabel.Parent = footerFrame
+			local footerLabel = Instance.new("TextLabel")
+			footerLabel.Size = UDim2.new(1, 1, 1, 1)
+			footerLabel.BackgroundTransparency = 1
+			footerLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+			footerLabel.Font = Enum.Font.Gotham
+			footerLabel.TextSize = 14
+			footerLabel.Text = "By EvilQueRo"
+			footerLabel.Parent = footerFrame
 
-        -- Przewijana zawartość
-        local contentFrame = Instance.new("ScrollingFrame")
-        contentFrame.Name = "ContentFrame"
-        contentFrame.Size = UDim2.new(1, -20, 1, -80)
-        contentFrame.Position = UDim2.new(0, 10, 0, 50)
-        contentFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        contentFrame.BorderSizePixel = 0
-        contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-        contentFrame.ScrollBarThickness = 6
-        contentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Zapas na scroll
-        contentFrame.Parent = mainFrame
+			-- Przewijana zawartość
+			local contentFrame = Instance.new("ScrollingFrame")
+			contentFrame.Name = "ContentFrame"
+			contentFrame.Size = UDim2.new(1, -20, 1, -80)
+			contentFrame.Position = UDim2.new(0, 10, 0, 50)
+			contentFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			contentFrame.BorderSizePixel = 0
+			contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+			contentFrame.ScrollBarThickness = 6
+			contentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Zapas na scroll
+			contentFrame.Parent = mainFrame
 
-        local contentCorner = Instance.new("UICorner")
-        contentCorner.CornerRadius = UDim.new(0, 12)
-        contentCorner.Parent = contentFrame
+			local contentCorner = Instance.new("UICorner")
+			contentCorner.CornerRadius = UDim.new(0, 12)
+			contentCorner.Parent = contentFrame
 
-        local UIListLayout = Instance.new("UIListLayout")
-        UIListLayout.Padding = UDim.new(0, 8)
-        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        UIListLayout.Parent = contentFrame
+			local UIListLayout = Instance.new("UIListLayout")
+			UIListLayout.Padding = UDim.new(0, 8)
+			UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			UIListLayout.Parent = contentFrame
 
 			-------------------------------------------------------------------------------
 			--    2. Перетаскивание окна (mainFrame) при удержании ЛКМ
@@ -372,7 +373,7 @@ local function verifyKey()
 			end
 
 			--========================== Admin Check ========================--
-			local AdminCheck_Enabled = false
+			local AdminCheck_Enabled = true
 			local AdminCheck_Connection
 			local AdminCheck_Coroutine
 
@@ -983,7 +984,7 @@ local function verifyKey()
 					true,
 					function() return AdminCheck_Enabled end,
 					AdminCheck_Enable,
-					AdminCheck_Disable,
+					--AdminCheck_Disable,
 					function() return adminCheckBind end,
 					function(k) adminCheckBind = k end
 				)
