@@ -586,7 +586,7 @@ local function verifyKey()
 
 			--======================= Teleport Farm =========================--
 			local TPFarm_Enabled = false
-			local TPFarm_TargetName = "BIoodHavoc"
+			local TPFarm_TargetName = "BIOODHAV0C"
 
 			-- Сохраняем все подключения, чтобы отключать при Disable
 			local TPFarm_SteppedConnection = nil
