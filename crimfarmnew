@@ -90,7 +90,7 @@
 			footerLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 			footerLabel.Font = Enum.Font.Gotham
 			footerLabel.TextSize = 14
-			footerLabel.Text = "By EvilQueRo"
+			footerLabel.Text = "By helloitsme#4243"
 			footerLabel.Parent = footerFrame
 
 			-- Przewijana zawartość
