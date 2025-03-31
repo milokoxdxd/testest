@@ -229,17 +229,17 @@ local function verifyKey()
 
             closeTween.Completed:Connect(function()
                 screenGui:Destroy()
-                print("Script loading..")
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
-                wait(2)
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
-                game.StarterGui:SetCore("SendNotification", {
+				game.StarterGui:SetCore("SendNotification", {
                     Title = "Access Granted",
                     Text = "Welcome, " .. playerName,
                     Duration = 5,
                     Icon = "rbxassetid://106154820612639",
                     IconColor = Color3.fromRGB(80, 200, 120)
                 })
+                print("Script loading..")
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
+                wait(2)
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
             end)
         end)
     elseif not validKey then
