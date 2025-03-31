@@ -3,7 +3,7 @@ if game.GameId == 151616126 then
 else
 	local HyperEscape = { -- fuck Off I Like It, Even Tho It Is Anoying.
 		AimBot = { -- Same Targeting System Just Sticky Aim Now.
-			Enabled = true; -- No Need To Change Anything Here As It Is On The GUI
+			Enabled = false; -- No Need To Change Anything Here As It Is On The GUI
 			TeamCheck = false;
 			WallCheck = true;
 			StickyAim = false; -- This Will Stick To The Same Target.
