@@ -276,7 +276,9 @@ local function LoadESP(Player) -- I Thought It Would Be Harder To Make, Idk Why
     players.PlayerRemoving:Connect(function(plr)
 		if plr ~= localPlayer then
 			local folder = game.CoreGui.Folder:FindFirstChild(plr.Name .."ESP")
-            folder:Destroy()
+			if folder then
+				folder:Destroy()
+			end
 		end
 	end)
 
