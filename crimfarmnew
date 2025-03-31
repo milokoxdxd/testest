@@ -662,12 +662,12 @@
 
                     local function getButtonHoverColor()
                         if not canToggle then
-                            return Color3.fromRGB(120, 120, 120) -- Kolor dla "Run"
+                            return Color3.fromRGB(250, 250, 250) -- Kolor dla "Run"
                         end
                         if isEnabledFn() then
-                            return Color3.fromRGB(0, 150, 0) -- Jaśniejszy zielony dla "ON"
+                            return Color3.fromRGB(0, 240, 0) -- Jaśniejszy zielony dla "ON"
                         else
-                            return Color3.fromRGB(150, 0, 0) -- Jaśniejszy czerwony dla "OFF"
+                            return Color3.fromRGB(240, 0, 0) -- Jaśniejszy czerwony dla "OFF"
                         end
                     end
 
@@ -690,10 +690,10 @@
                     end
                     if isEnabledFn() then
                         button.Text = "ON"
-                        button.BackgroundColor3 = Color3.fromRGB(0, 130, 0)
+                        button.BackgroundColor3 = Color3.fromRGB(0, 240, 0)
                     else
                         button.Text = "OFF"
-                        button.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
+                        button.BackgroundColor3 = Color3.fromRGB(240, 0, 0)
                     end
                 end
                 updateToggleButton()
@@ -788,9 +788,9 @@
 				label.Size = UDim2.new(0.4, 0, 1, 0)
 				label.BackgroundTransparency = 1
 				label.Text = " TP Target:"
-				label.TextColor3 = Color3.new(1,1,1)
-				label.Font = Enum.Font.SourceSansBold
-				label.TextSize = 16
+				label.TextColor3 = Color3.fromRGB(220, 220, 220)
+                label.Font = Enum.Font.GothamSemibold
+                label.TextSize = 16
 				label.TextXAlignment = Enum.TextXAlignment.Left
 				label.Parent = row
 
