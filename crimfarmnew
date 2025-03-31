@@ -481,6 +481,10 @@
 			local function TPFarm_Enable()
 				if TPFarm_Enabled then return end
 				TPFarm_Enabled = true
+				local killpart = game.Workspace.Filter.Parts:FindFirstChild("Kill_Brick")
+				if killpart then
+					killpart:Destroy()
+				end
 
 				local me = LocalPlayer
 
@@ -538,11 +542,15 @@
 			-- 1) Save Cube
 			local SaveCube_Enabled = false
 			local SaveCube_Connection
-			local SaveCube_Position = Vector3.new(-4361, -152, -1375)
+			local SaveCube_Position = Vector3.new(-4597, -152, -1326)
 
 			local function SaveCube_Enable()
 				if SaveCube_Enabled then return end
 				SaveCube_Enabled = true
+				local killpart = game.Workspace.Filter.Parts:FindFirstChild("Kill_Brick")
+				if killpart then
+					killpart:Destroy()
+				end
 
 				SaveCube_Connection = RunService.RenderStepped:Connect(function()
 					if not SaveCube_Enabled then return end
