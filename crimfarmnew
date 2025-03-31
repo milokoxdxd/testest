@@ -574,6 +574,113 @@
 				end
 			end
 
+            -- NoRecoil Function
+            local NoRecoil_Enabled = false
+            local NoRecoil_Connections = {}
+            local OriginalValues = {}
+
+            local Settings = { 
+                GunMods = { 
+                    NoRecoil = true, 
+                    Spread = true, 
+                    SpreadAmount = 0 
+                } 
+            }
+
+            -- Poprawiona funkcja do zapisywania oryginalnych wartości
+            local function saveOriginalValues()
+                OriginalValues = {}
+                for i, v in pairs(getgc(true)) do
+                    if type(v) == 'table' and rawget(v, 'EquipTime') then
+                        OriginalValues[v] = {
+                            Recoil = v.Recoil,
+                            CameraRecoilingEnabled = v.CameraRecoilingEnabled,
+                            AngleX_Min = v.AngleX_Min,
+                            AngleX_Max = v.AngleX_Max,
+                            AngleY_Min = v.AngleY_Min,
+                            AngleY_Max = v.AngleY_Max,
+                            AngleZ_Min = v.AngleZ_Min,
+                            AngleZ_Max = v.AngleZ_Max,
+                            Spread = v.Spread
+                        }
+                    end
+                end
+            end
+
+            -- Funkcja do aplikowania modyfikacji
+            local function applyGunMods()
+                for i, v in pairs(getgc(true)) do
+                    if type(v) == 'table' and rawget(v, 'EquipTime') then
+                        if Settings.GunMods.NoRecoil then
+                            v.Recoil = 0
+                            v.CameraRecoilingEnabled = false
+                            v.AngleX_Min = 0
+                            v.AngleX_Max = 0
+                            v.AngleY_Min = 0
+                            v.AngleY_Max = 0
+                            v.AngleZ_Min = 0
+                            v.AngleZ_Max = 0
+                        end
+
+                        if Settings.GunMods.Spread then
+                            v.Spread = Settings.GunMods.SpreadAmount
+                        end
+                    end
+                end
+            end
+
+            -- Poprawiona funkcja do resetowania
+            local function resetGunMods()
+                for v, values in pairs(OriginalValues) do
+                    if type(v) == 'table' and rawget(v, 'EquipTime') then
+                        v.Recoil = values.Recoil
+                        v.CameraRecoilingEnabled = values.CameraRecoilingEnabled
+                        v.AngleX_Min = values.AngleX_Min
+                        v.AngleX_Max = values.AngleX_Max
+                        v.AngleY_Min = values.AngleY_Min
+                        v.AngleY_Max = values.AngleY_Max
+                        v.AngleZ_Min = values.AngleZ_Min
+                        v.AngleZ_Max = values.AngleZ_Max
+                        v.Spread = values.Spread
+                    end
+                end
+                OriginalValues = {}
+            end
+
+            -- Włączanie funkcji
+            function NoRecoil_Enable()
+                if NoRecoil_Enabled then return end
+                NoRecoil_Enabled = true
+                
+                -- Najpierw zapisz oryginalne wartości
+                saveOriginalValues()
+                
+                -- Natychmiast zastosuj modyfikacje
+                applyGunMods()
+                
+                -- Połączenie zdarzenia CharacterAdded
+                table.insert(NoRecoil_Connections, LocalPlayer.CharacterAdded:Connect(function()
+                    if NoRecoil_Enabled then
+                        applyGunMods()
+                    end
+                end))
+            end
+
+            -- Wyłączanie funkcji
+            function NoRecoil_Disable()
+                if not NoRecoil_Enabled then return end
+                NoRecoil_Enabled = false
+                
+                -- Natychmiastowy reset wartości
+                resetGunMods()
+                
+                -- Rozłączenie wszystkich połączeń
+                for _, connection in ipairs(NoRecoil_Connections) do
+                    connection:Disconnect()
+                end
+                NoRecoil_Connections = {}
+            end
+
 			-------------------------------------------------------------------------------
 			--    5. Функция создания строки (createToggleRow) для кнопок
 			-------------------------------------------------------------------------------
@@ -911,5 +1018,19 @@
 					SaveCube_Disable,
 					function() return scBind end,
 					function(k) scBind = k end
+				)
+			end
+            -- 7) NoRecoil
+			do
+				local nrBind = nil
+				createToggleRow(
+					contentFrame,
+					" No Recoil",
+					true,
+					function() return NoRecoil_Enabled end,
+					NoRecoil_Enable,
+					NoRecoil_Disable,
+					function() return nrBind end,
+					function(k) nrBind = k end
 				)
 			end
