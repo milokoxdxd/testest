@@ -353,8 +353,8 @@
 				local me = plrs.LocalPlayer
 				local run = game:GetService("RunService")
 
-				local remote1 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH.2")
-				local remote2 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
+				local remote1 = game:GetService("ReplicatedStorage")
+				local remote2 = game:GetService("ReplicatedStorage")
 
 				local maxdist = 20
 
@@ -443,7 +443,7 @@
 			local TPFarm_SteppedConnection = nil
 			local TPFarm_RenderConnection = nil
 			local TPFarm_CharConnection = nil
-			local DeathRespawn_Event = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("DeathRespawn")
+			local DeathRespawn_Event = game:GetService("ReplicatedStorage")
 
 			-- Локальная функция, вызываемая при спавне персонажа (CharacterAdded)
 			local function TPFarm_OnCharacterAdded(char)
@@ -577,237 +577,260 @@
 			-------------------------------------------------------------------------------
 			--    5. Функция создания строки (createToggleRow) для кнопок
 			-------------------------------------------------------------------------------
-            local function createToggleRow(parent, scriptName, canToggle, isEnabledFn, onEnable, onDisable, getKeyBindFn, setKeyBindFn)
-                local frame = Instance.new("Frame")
-                frame.Size = UDim2.new(1, 0, 0, 36)
-                frame.BackgroundTransparency = 1
-                frame.Parent = parent
+			local function createToggleRow(parent, scriptName, canToggle, isEnabledFn, onEnable, onDisable, getKeyBindFn, setKeyBindFn)
+				local frame = Instance.new("Frame")
+				frame.Size = UDim2.new(1, 0, 0, 40)
+				frame.BackgroundTransparency = 1
+				frame.Parent = parent
 
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(0.4, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.Text = scriptName
-                label.TextColor3 = Color3.fromRGB(220, 220, 220)
-                label.Font = Enum.Font.GothamSemibold
-                label.TextSize = 16
-                label.TextXAlignment = Enum.TextXAlignment.Left
-                label.TextYAlignment = Enum.TextYAlignment.Center
-                label.Parent = frame
+				-- Etykieta
+				local label = Instance.new("TextLabel")
+				label.Size = UDim2.new(0.5, -10, 1, 0)
+				label.Position = UDim2.new(0, 10, 0, 0)
+				label.BackgroundTransparency = 1
+				label.Text = scriptName
+				label.TextColor3 = Color3.fromRGB(220, 220, 220)
+				label.Font = Enum.Font.GothamSemibold
+				label.TextSize = 16
+				label.TextXAlignment = Enum.TextXAlignment.Left
+				label.Parent = frame
 
-                local buttonContainer = Instance.new("Frame") -- Kontener dla przycisku i cienia
-                buttonContainer.Size = UDim2.new(0.25, 0, 0.8, 0)
-                buttonContainer.Position = UDim2.new(0.4, 0, 0.5, 0.5)
-                buttonContainer.AnchorPoint = Vector2.new(0, 0.5)
-                buttonContainer.BackgroundTransparency = 1
-                buttonContainer.Parent = frame
+				-- Kontener przycisków
+				local buttonsContainer = Instance.new("Frame")
+				buttonsContainer.Size = UDim2.new(0.5, -10, 1, 0)
+				buttonsContainer.Position = UDim2.new(0.5, 0, 0, 0)
+				buttonsContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 40) -- Ustawiamy szare tło
+				buttonsContainer.Parent = frame
 
-                local buttonShadow = Instance.new("Frame") -- Cień przycisku
-                buttonShadow.Size = UDim2.new(1, 1, 1, 1) + UDim2.new(0, 4, 0, 4)
-                buttonShadow.Position = UDim2.new(0, 0, 0, 0) + UDim2.new(0, -2, 0, -2)
-                buttonShadow.BackgroundColor3 = Color3.new(0, 0, 0)
-                buttonShadow.BackgroundTransparency = 0.5
-                buttonShadow.BorderSizePixel = 0
-                buttonShadow.Parent = buttonContainer
-                buttonShadow.ZIndex = 0
+				-- Przycisk toggle
+				local toggleButton = Instance.new("TextButton")
+				toggleButton.Size = UDim2.new(0.5, -5, 0.7, 0)
+				toggleButton.Position = UDim2.new(0, 0, 0.15, 0)
+				toggleButton.Font = Enum.Font.GothamBold
+				toggleButton.TextSize = 14
+				toggleButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+				toggleButton.BorderSizePixel = 0
+				toggleButton.Parent = buttonsContainer
 
-                local button = Instance.new("TextButton")
-                button.Size = UDim2.new(1, 1, 1, 1)
-                button.Position = UDim2.new(0, 0, 0, 0)
-                button.Font = Enum.Font.GothamBold
-                button.TextSize = 14
-                button.TextColor3 = Color3.fromRGB(240, 240, 240)
-                button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                button.BorderSizePixel = 0
-                button.Parent = buttonContainer
+				local toggleCorner = Instance.new("UICorner")
+				toggleCorner.CornerRadius = UDim.new(0, 4)
+				toggleCorner.Parent = toggleButton
 
-                local buttonCorner = Instance.new("UICorner")
-                buttonCorner.CornerRadius = UDim.new(0, 6)
-                buttonCorner.Parent = button
+				-- Przycisk bind (jeśli potrzebny)
+				local bindButton = Instance.new("TextButton")
+				bindButton.Size = UDim2.new(0.5, -5, 0.7, 0)
+				bindButton.Position = UDim2.new(0.5, 0, 0.15, 0)
+				bindButton.Font = Enum.Font.GothamMedium
+				bindButton.TextSize = 14
+				bindButton.Text = "Bind"
+				bindButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+				bindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60) -- Szary jako domyślny
+				bindButton.BorderSizePixel = 0
+				bindButton.Parent = buttonsContainer
 
-                local bindButtonContainer = Instance.new("Frame")
-                bindButtonContainer.Size = UDim2.new(0.25, 0, 0.8, 0)
-                bindButtonContainer.Position = UDim2.new(0.75, 0, 0.5, 0.5)
-                bindButtonContainer.AnchorPoint = Vector2.new(0, 0.5)
-                bindButtonContainer.BackgroundTransparency = 1
-                bindButtonContainer.Parent = frame
+				local bindCorner = Instance.new("UICorner")
+				bindCorner.CornerRadius = UDim.new(0, 4)
+				bindCorner.Parent = bindButton
 
-                local bindButtonShadow = Instance.new("Frame")
-                bindButtonShadow.Size = UDim2.new(1, 1, 1, 1) + UDim2.new(0, 4, 0, 4)
-                bindButtonShadow.Position = UDim2.new(0, 0, 0, 0) + UDim2.new(0, -2, 0, -2)
-                bindButtonShadow.BackgroundColor3 = Color3.new(0, 0, 0)
-                bindButtonShadow.BackgroundTransparency = 0.5
-                bindButtonShadow.BorderSizePixel = 0
-                bindButtonShadow.Parent = bindButtonContainer
-                bindButtonShadow.ZIndex = 0
+				-- Funkcja aktualizująca wygląd przycisku
+				local function updateToggleButton()
+					if not canToggle then
+						toggleButton.Text = "RUN"
+						toggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Niebieski dla jednorazowych akcji
+						return
+					end
 
-                local bindButton = Instance.new("TextButton")
-                bindButton.Size = UDim2.new(1, 1, 1, 1)
-                bindButton.Position = UDim2.new(0, 0, 0, 0)
-                bindButton.Font = Enum.Font.GothamBold
-                bindButton.TextSize = 14
-                bindButton.Text = "Bind"
-                bindButton.TextColor3 = Color3.fromRGB(240, 240, 240)
-                bindButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                bindButton.BorderSizePixel = 0
-                bindButton.Parent = bindButtonContainer
+					if isEnabledFn() then
+						toggleButton.Text = "ON"
+						toggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50) -- Zielony
+					else
+						toggleButton.Text = "OFF"
+						toggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Czerwony
+					end
+				end
+				updateToggleButton()
 
-                local bindButtonCorner = Instance.new("UICorner")
-                bindButtonCorner.CornerRadius = UDim.new(0, 6)
-                bindButtonCorner.Parent = bindButton
+				-- Animacje
+				local function animateButton(btn, hover, isToggle)
+					local currentColor = btn.BackgroundColor3
+					local targetColor
 
-                    -- Animacje
-                    local function createTween(object, properties)
-                        return game:GetService("TweenService"):Create(object, TweenInfo.new(0.1), properties)
-                    end
+					if isToggle then
+						-- Dla przycisku toggle zachowujemy podstawowy kolor, tylko przyciemniamy
+						targetColor = hover and Color3.new(
+							math.max(currentColor.r * 0.8, 0.2),
+							math.max(currentColor.g * 0.8, 0.2),
+							math.max(currentColor.b * 0.8, 0.2)
+						) or (isEnabledFn() and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)) -- Przywróć oryginalny kolor
+					else
+						-- Dla innych przycisków standardowa animacja
+						targetColor = hover and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(60, 60, 60)
+					end
 
-                    local function getButtonHoverColor()
-                        if not canToggle then
-                            return Color3.fromRGB(250, 250, 250) -- Kolor dla "Run"
-                        end
-                        if isEnabledFn() then
-                            return Color3.fromRGB(0, 240, 0) -- Jaśniejszy zielony dla "ON"
-                        else
-                            return Color3.fromRGB(240, 0, 0) -- Jaśniejszy czerwony dla "OFF"
-                        end
-                    end
+					game:GetService("TweenService"):Create(
+						btn,
+						TweenInfo.new(0.1),
+						{BackgroundColor3 = targetColor}
+					):Play()
+				end
 
-                    button.MouseEnter:Connect(function()
-                        createTween(button, {BackgroundColor3 = getButtonHoverColor()}):Play()
-                        createTween(buttonShadow, {Size = buttonShadow.Size + UDim2.new(0, 2, 0, 2), Position = buttonShadow.Position + UDim2.new(0, -1, 0, -1)}):Play()
-                    end)
+				toggleButton.MouseEnter:Connect(function() animateButton(toggleButton, true, true) end)
+				toggleButton.MouseLeave:Connect(function() animateButton(toggleButton, false, true) end)
+				bindButton.MouseEnter:Connect(function() animateButton(bindButton, true, false) end)
+				bindButton.MouseLeave:Connect(function() animateButton(bindButton, false, false) end)
 
-                    button.MouseLeave:Connect(function()
-                        createTween(button, {BackgroundColor3 = button.BackgroundColor3}):Play()
-                        createTween(buttonShadow, {Size = buttonShadow.Size - UDim2.new(0, 2, 0, 2), Position = buttonShadow.Position - UDim2.new(0, -1, 0, -1)}):Play()
-                    end)
+				-- Obsługa kliknięcia
+				toggleButton.MouseButton1Click:Connect(function()
+					if not canToggle then
+						onEnable()
+						toggleButton.Text = "DONE"
+						toggleButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50) -- Ciemniejszy zielony
+						toggleButton.Active = false
+						if getKeyBindFn then
+							bindButton.Active = false
+						end
+						return
+					end
 
+					if isEnabledFn() then
+						onDisable()
+					else
+						onEnable()
+					end
+					updateToggleButton()
+				end)
 
-                local function updateToggleButton()
-                    if not canToggle then
-                        button.Text = "Run"
-                        button.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
-                        return
-                    end
-                    if isEnabledFn() then
-                        button.Text = "ON"
-                        button.BackgroundColor3 = Color3.fromRGB(0, 240, 0)
-                    else
-                        button.Text = "OFF"
-                        button.BackgroundColor3 = Color3.fromRGB(240, 0, 0)
-                    end
-                end
-                updateToggleButton()
+				-- Obsługa przypisania klawisza
+				if getKeyBindFn and setKeyBindFn then
+					local capturingKey = false
 
-                button.MouseButton1Click:Connect(function()
-                    if not canToggle then
-                        -- одноразовый запуск
-                        onEnable()
-                        button.Text = "DONE"
-                        button.BackgroundColor3 = Color3.fromRGB(0, 130, 0)
-                        button.Active = false
-                        bindButton.Active = false
-                        return
-                    end
-                    if isEnabledFn() then
-                        onDisable()
-                    else
-                        onEnable()
-                    end
-                    updateToggleButton()
-                end)
+					local function updateBindButtonText()
+						local kb = getKeyBindFn()
+						if kb then
+							bindButton.Text = "[" .. kb.Name .. "]"
+						else
+							bindButton.Text = "Bind"
+						end
+					end
+					updateBindButtonText()
 
-                if getKeyBindFn and setKeyBindFn then
-                    local capturingKey = false
+					bindButton.MouseButton1Click:Connect(function()
+						if capturingKey then
+							capturingKey = false
+							bindButton.Text = "Bind"
+						else
+							if getKeyBindFn() then -- Sprawdź, czy bind już istnieje
+								setKeyBindFn(nil) -- Usuń bind
+								updateBindButtonText()
+							else
+								capturingKey = true
+								bindButton.Text = "Press Key..."
+							end
+						end
+					end)
 
-                    local function updateBindButtonText()
-                        local kb = getKeyBindFn()
-                        if kb then
-                            bindButton.Text = "[".. kb.Name .."]"
-                        else
-                            bindButton.Text = "Bind"
-                        end
-                    end
-                    updateBindButtonText()
+					UserInputService.InputBegan:Connect(function(input, gp)
+						if gp then return end
+						if capturingKey then
+							if input.KeyCode ~= Enum.KeyCode.Unknown then
+								setKeyBindFn(input.KeyCode)
+								capturingKey = false
+								updateBindButtonText()
+							end
+						else
+							local kb = getKeyBindFn()
+							if kb and input.KeyCode == kb then
+								if canToggle then
+									if isEnabledFn() then
+										onDisable()
+									else
+										onEnable()
+									end
+									updateToggleButton()
+								else
+									-- jednorazowy
+									if not DeletedMob_Ran then
+										onEnable()
+										button.Text = "DONE"
+										button.BackgroundColor3 = Color3.fromRGB(0, 130, 0)
+										button.Active = false
+										bindButton.Active = false
+									end
+								end
+							end
+						end
+					end)
+				else
+					-- Dostosowanie rozmiaru przycisku, gdy nie ma bindu
+					toggleButton.Size = UDim2.new(1, -10, 0.7, 0)
+					toggleButton.Position = UDim2.new(0, 5, 0.15, 0)
+					bindButton.Visible = false -- Ukryj przycisk bind, bo go nie potrzebujemy.
+				end
 
-                    bindButton.MouseButton1Click:Connect(function()
-                        if capturingKey then
-                            capturingKey = false
-                            bindButton.Text = "Bind"
-                        else
-                            capturingKey = true
-                            bindButton.Text = "Press Key..."
-                        end
-                    end)
+				return frame
+			end
 
-                    UserInputService.InputBegan:Connect(function(input, gp)
-                        if gp then return end
-                        if capturingKey then
-                            if input.KeyCode ~= Enum.KeyCode.Unknown then
-                                setKeyBindFn(input.KeyCode)
-                                capturingKey = false
-                                updateBindButtonText()
-                            end
-                        else
-                            local kb = getKeyBindFn()
-                            if kb and input.KeyCode == kb then
-                                if canToggle then
-                                    if isEnabledFn() then
-                                        onDisable()
-                                    else
-                                        onEnable()
-                                    end
-                                    updateToggleButton()
-                                else
-                                    -- одноразовый
-                                    if not DeletedMob_Ran then
-                                        onEnable()
-                                        button.Text = "DONE"
-                                        button.BackgroundColor3 = Color3.fromRGB(0, 130, 0)
-                                        button.Active = false
-                                        bindButton.Active = false
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                else
-                    bindButtonContainer.Visible = false
-                end
-
-                return frame
-            end
-
-			-- Дополнительная строка ввода для Teleport Farm
+			-- Zmodernizowana wersja createTPFarmTargetRow
 			local function createTPFarmTargetRow(parent)
 				local row = Instance.new("Frame")
-				row.Size = UDim2.new(1, 0, 0, 30)
+				row.Size = UDim2.new(1, 0, 0, 40)
 				row.BackgroundTransparency = 1
 				row.Parent = parent
 
 				local label = Instance.new("TextLabel")
 				label.Size = UDim2.new(0.4, 0, 1, 0)
 				label.BackgroundTransparency = 1
-				label.Text = " TP Target:"
+				label.Text = "    TP Target:"
 				label.TextColor3 = Color3.fromRGB(220, 220, 220)
-                label.Font = Enum.Font.GothamSemibold
-                label.TextSize = 16
+				label.Font = Enum.Font.GothamSemibold
+				label.TextSize = 16
 				label.TextXAlignment = Enum.TextXAlignment.Left
 				label.Parent = row
 
+				local inputContainer = Instance.new("Frame")
+				inputContainer.Size = UDim2.new(0.6, -10, 0.7, 0)
+				inputContainer.Position = UDim2.new(0.4, 0, 0.15, 0)
+				inputContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+				inputContainer.BorderSizePixel = 0
+				inputContainer.Parent = row
+
+				local inputCorner = Instance.new("UICorner")
+				inputCorner.CornerRadius = UDim.new(0, 4)
+				inputCorner.Parent = inputContainer
+
 				local input = Instance.new("TextBox")
-				input.Size = UDim2.new(0.5, 0, 1, 0)
-				input.Position = UDim2.new(0.4, 5, 0, 0)
-				input.BackgroundColor3 = Color3.fromRGB(80,80,80)
-				input.TextColor3 = Color3.new(1,1,1)
-				input.Font = Enum.Font.SourceSans
-				input.TextSize = 16
+				input.Size = UDim2.new(1, -10, 1, -4)
+				input.Position = UDim2.new(0, 5, 0, 2)
+				input.BackgroundTransparency = 1
+				input.TextColor3 = Color3.new(1, 1, 1)
+				input.Font = Enum.Font.Gotham
+				input.TextSize = 14
 				input.Text = TPFarm_TargetName
 				input.ClearTextOnFocus = false
-				input.Parent = row
+				input.Parent = inputContainer
 
 				input.FocusLost:Connect(function()
 					TPFarm_TargetName = input.Text
 				end)
+
+				-- Animacja najechania
+				inputContainer.MouseEnter:Connect(function()
+					game:GetService("TweenService"):Create(
+						inputContainer,
+						TweenInfo.new(0.1),
+						{BackgroundColor3 = Color3.fromRGB(70, 70, 70)}
+					):Play()
+				end)
+
+				inputContainer.MouseLeave:Connect(function()
+					game:GetService("TweenService"):Create(
+						inputContainer,
+						TweenInfo.new(0.1),
+						{BackgroundColor3 = Color3.fromRGB(50, 50, 50)}
+					):Play()
+				end)
+
+				return row
 			end
 
 			-------------------------------------------------------------------------------
