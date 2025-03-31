@@ -6,7 +6,7 @@ local SoundService = game:GetService("SoundService")
 -- Konfiguracja
 local VALID_KEYS = {
     ["eqr"] = true,
-    ["scnitselpersonalcode1586"] = {users = {"xXkingdom_girlXx"}}
+    ["scnitselpersonalcode1586"] = { users = { "xXkingdom_girlXx" } }
 }
 
 -- Tworzenie głównego interfejsu
@@ -174,14 +174,17 @@ soundEffects.success.SoundId = "rbxassetid://114326413874741" -- Dźwięk sukces
 soundEffects.error.SoundId = "rbxassetid://80099403859001" -- Dźwięk błędu
 soundEffects.click.SoundId = "rbxassetid://6895079853" -- Dźwięk kliknięcia
 
+-- Flaga śledząca, czy klucz został zweryfikowany
+local keyVerified = false
+
 -- Funkcja weryfikacji klucza
 local function verifyKey()
     soundEffects.click:Play()
-    
+
     local key = inputBox.Text:lower():gsub("%s+", "")
     local playerName = Players.LocalPlayer.Name
     local validKey = false
-    
+
     -- Sprawdź ogólne klucze
     if VALID_KEYS[key] == true then
         validKey = true
@@ -194,69 +197,70 @@ local function verifyKey()
             end
         end
     end
-    
-    if validKey then
+
+    if validKey and not keyVerified then
+        keyVerified = true
         soundEffects.success:Play()
         statusLabel.Text = "✓ Verification successful"
         statusLabel.TextColor3 = Color3.fromRGB(100, 220, 100)
-        
+
         -- Animacja sukcesu (pulsowanie)
         local pulse1 = TweenService:Create(verifyButton, TweenInfo.new(0.2), {
             BackgroundColor3 = Color3.fromRGB(100, 220, 130),
             Size = UDim2.new(1, -35, 0, 42)
         })
-        
+
         local pulse2 = TweenService:Create(verifyButton, TweenInfo.new(0.2), {
             BackgroundColor3 = Color3.fromRGB(70, 180, 100),
             Size = UDim2.new(1, -40, 0, 40)
         })
-        
+
         pulse1:Play()
         pulse1.Completed:Connect(function()
             pulse2:Play()
         end)
-        
+
         -- Zamknięcie interfejsu po sukcesie
         task.delay(0.8, function()
             local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
                 Size = UDim2.new(0, 0, 0, 0)
             })
             closeTween:Play()
-            
+
             closeTween.Completed:Connect(function()
                 screenGui:Destroy()
                 print("Script loading..")
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
-				wait(2)
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
+                wait(2)
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
                 game.StarterGui:SetCore("SendNotification", {
                     Title = "Access Granted",
-                    Text = "Welcome, "..playerName,
+                    Text = "Welcome, " .. playerName,
                     Duration = 5,
                     Icon = "rbxassetid://106154820612639",
                     IconColor = Color3.fromRGB(80, 200, 120)
                 })
             end)
         end)
-    else
+    elseif not validKey then
         soundEffects.error:Play()
         statusLabel.Text = "❌ Invalid key"
         statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
-        
+
         -- Animacja błędu (pulsowanie czerwone)
         local errorColor1 = TweenService:Create(verifyButton, TweenInfo.new(0.1), {
             BackgroundColor3 = Color3.fromRGB(220, 100, 100)
         })
-        
+
         local errorColor2 = TweenService:Create(verifyButton, TweenInfo.new(0.3), {
             BackgroundColor3 = Color3.fromRGB(70, 180, 100)
         })
-        
+
         errorColor1:Play()
         errorColor1.Completed:Connect(function()
             errorColor2:Play()
         end)
-        
+
         -- Reset po 2 sekundach
         task.delay(2, function()
             statusLabel.Text = ""
@@ -284,7 +288,7 @@ openTween:Play()
 -- Automatyczne sprawdzanie przy poprawnym kluczu
 inputBox:GetPropertyChangedSignal("Text"):Connect(function()
     local key = inputBox.Text:lower():gsub("%s+", "")
-    if VALID_KEYS[key] then
+    if VALID_KEYS[key] and not keyVerified then
         verifyKey()
     end
 end)
