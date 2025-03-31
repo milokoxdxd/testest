@@ -577,7 +577,8 @@
             -- NoRecoil Function
             local NoRecoil_Enabled = false
             local NoRecoil_Connections = {}
-            local OriginalValues = {}
+            local GlobalOriginalValues = {} -- Globalne przechowywanie oryginalnych wartości
+            local WeaponCache = {} -- Cache dla szybszego dostępu
 
             local Settings = { 
                 GunMods = { 
@@ -587,96 +588,126 @@
                 } 
             }
 
-            -- Poprawiona funkcja do zapisywania oryginalnych wartości
-            local function saveOriginalValues()
-                OriginalValues = {}
-                for i, v in pairs(getgc(true)) do
+            local Player = game:GetService("Players").LocalPlayer
+
+            -- Szybkie zapisywanie oryginalnych wartości
+            local function cacheWeapons()
+                WeaponCache = {}
+                for _, v in pairs(getgc(true)) do
                     if type(v) == 'table' and rawget(v, 'EquipTime') then
-                        OriginalValues[v] = {
-                            Recoil = v.Recoil,
-                            CameraRecoilingEnabled = v.CameraRecoilingEnabled,
-                            AngleX_Min = v.AngleX_Min,
-                            AngleX_Max = v.AngleX_Max,
-                            AngleY_Min = v.AngleY_Min,
-                            AngleY_Max = v.AngleY_Max,
-                            AngleZ_Min = v.AngleZ_Min,
-                            AngleZ_Max = v.AngleZ_Max,
-                            Spread = v.Spread
-                        }
+                        table.insert(WeaponCache, v)
+                        if not GlobalOriginalValues[v] then
+                            GlobalOriginalValues[v] = {
+                                Recoil = v.Recoil,
+                                CameraRecoilingEnabled = v.CameraRecoilingEnabled,
+                                AngleX_Min = v.AngleX_Min,
+                                AngleX_Max = v.AngleX_Max,
+                                AngleY_Min = v.AngleY_Min,
+                                AngleY_Max = v.AngleY_Max,
+                                AngleZ_Min = v.AngleZ_Min,
+                                AngleZ_Max = v.AngleZ_Max,
+                                Spread = v.Spread
+                            }
+                        end
                     end
                 end
             end
 
-            -- Funkcja do aplikowania modyfikacji
+            -- Ultra szybka aplikacja modyfikacji
             local function applyGunMods()
-                for i, v in pairs(getgc(true)) do
-                    if type(v) == 'table' and rawget(v, 'EquipTime') then
-                        if Settings.GunMods.NoRecoil then
-                            v.Recoil = 0
-                            v.CameraRecoilingEnabled = false
-                            v.AngleX_Min = 0
-                            v.AngleX_Max = 0
-                            v.AngleY_Min = 0
-                            v.AngleY_Max = 0
-                            v.AngleZ_Min = 0
-                            v.AngleZ_Max = 0
-                        end
-
-                        if Settings.GunMods.Spread then
-                            v.Spread = Settings.GunMods.SpreadAmount
-                        end
+                for _, weapon in ipairs(WeaponCache) do
+                    if Settings.GunMods.NoRecoil then
+                        weapon.Recoil = 0
+                        weapon.CameraRecoilingEnabled = false
+                        weapon.AngleX_Min = 0
+                        weapon.AngleX_Max = 0
+                        weapon.AngleY_Min = 0
+                        weapon.AngleY_Max = 0
+                        weapon.AngleZ_Min = 0
+                        weapon.AngleZ_Max = 0
+                    end
+                    
+                    if Settings.GunMods.Spread then
+                        weapon.Spread = Settings.GunMods.SpreadAmount
                     end
                 end
             end
 
-            -- Poprawiona funkcja do resetowania
+            -- Szybki reset
             local function resetGunMods()
-                for v, values in pairs(OriginalValues) do
-                    if type(v) == 'table' and rawget(v, 'EquipTime') then
-                        v.Recoil = values.Recoil
-                        v.CameraRecoilingEnabled = values.CameraRecoilingEnabled
-                        v.AngleX_Min = values.AngleX_Min
-                        v.AngleX_Max = values.AngleX_Max
-                        v.AngleY_Min = values.AngleY_Min
-                        v.AngleY_Max = values.AngleY_Max
-                        v.AngleZ_Min = values.AngleZ_Min
-                        v.AngleZ_Max = values.AngleZ_Max
-                        v.Spread = values.Spread
-                    end
+                for weapon, values in pairs(GlobalOriginalValues) do
+                    weapon.Recoil = values.Recoil
+                    weapon.CameraRecoilingEnabled = values.CameraRecoilingEnabled
+                    weapon.AngleX_Min = values.AngleX_Min
+                    weapon.AngleX_Max = values.AngleX_Max
+                    weapon.AngleY_Min = values.AngleY_Min
+                    weapon.AngleY_Max = values.AngleY_Max
+                    weapon.AngleZ_Min = values.AngleZ_Min
+                    weapon.AngleZ_Max = values.AngleZ_Max
+                    weapon.Spread = values.Spread
                 end
-                OriginalValues = {}
             end
 
-            -- Włączanie funkcji
-            function NoRecoil_Enable()
-                if NoRecoil_Enabled then return end
-                NoRecoil_Enabled = true
+            -- Optymalizowana obsługa broni
+            local function handleWeapon(weapon)
+                if NoRecoil_Enabled then
+                    task.wait(0.1) -- Minimalne opóźnienie
+                    cacheWeapons()
+                    applyGunMods()
+                end
+            end
+
+            -- Optymalizowana obsługa postaci
+            local function onCharacterAdded(character)
+                -- Szybkie sprawdzenie istniejących broni
+                for _, child in ipairs(character:GetChildren()) do
+                    if child:IsA("Tool") then
+                        handleWeapon(child)
+                    end
+                end
                 
-                -- Najpierw zapisz oryginalne wartości
-                saveOriginalValues()
+                -- Połączenie dla nowych broni
+                table.insert(NoRecoil_Connections, character.ChildAdded:Connect(function(child)
+                    if child:IsA("Tool") then
+                        handleWeapon(child)
+                    end
+                end))
                 
-                -- Natychmiast zastosuj modyfikacje
-                applyGunMods()
-                
-                -- Połączenie zdarzenia CharacterAdded
-                table.insert(NoRecoil_Connections, LocalPlayer.CharacterAdded:Connect(function()
+                -- Obsługa śmierci
+                table.insert(NoRecoil_Connections, character:WaitForChild("Humanoid").Died:Connect(function()
                     if NoRecoil_Enabled then
+                        task.wait(1.5) -- Optymalne opóźnienie respawnu
+                        cacheWeapons()
                         applyGunMods()
                     end
                 end))
             end
 
-            -- Wyłączanie funkcji
+            -- Błyskawiczne włączanie
+            function NoRecoil_Enable()
+                if NoRecoil_Enabled then return end
+                NoRecoil_Enabled = true
+                
+                cacheWeapons()
+                applyGunMods()
+                
+                -- Podpięcie zdarzeń
+                table.insert(NoRecoil_Connections, Player.CharacterAdded:Connect(onCharacterAdded))
+                if Player.Character then
+                    onCharacterAdded(Player.Character)
+                end
+            end
+
+            -- Natychmiastowe wyłączanie
             function NoRecoil_Disable()
                 if not NoRecoil_Enabled then return end
                 NoRecoil_Enabled = false
                 
-                -- Natychmiastowy reset wartości
                 resetGunMods()
                 
-                -- Rozłączenie wszystkich połączeń
-                for _, connection in ipairs(NoRecoil_Connections) do
-                    connection:Disconnect()
+                -- Czyszczenie połączeń
+                for _, conn in ipairs(NoRecoil_Connections) do
+                    conn:Disconnect()
                 end
                 NoRecoil_Connections = {}
             end
