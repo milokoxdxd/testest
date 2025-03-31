@@ -11,6 +11,7 @@ local VALID_KEYS = {
 
 -- Tworzenie głównego interfejsu
 local screenGui = Instance.new("ScreenGui")
+screenGui.ResetOnSpawn = false
 screenGui.Name = "KeyVerificationUI"
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
