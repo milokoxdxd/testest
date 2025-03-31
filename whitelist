@@ -6,7 +6,6 @@ local SoundService = game:GetService("SoundService")
 -- Konfiguracja
 local VALID_KEYS = {
 	["eloelo320"] = true,
-	["admincodeworkingforeveryone"] = true,
 	["scnitselpersonalcode1586"] = { users = { "xXkingdom_girlXx" } }
 }
 
