@@ -825,8 +825,20 @@
 				function() return Fly_Bind end,
 				function(k) Fly_Bind = k end
 			)
-
-			-- 2) Admin Check
+			-- 2) Anti AFK
+			do
+				local adminCheckBind = nil
+				createToggleRow(
+					contentFrame,
+					" Anti AFK",
+					true,
+					function() return AdminCheck_Enabled end,
+					AntiAFK_Enable,
+					function() return adminCheckBind end,
+					function(k) adminCheckBind = k end
+				)
+			end
+			-- 3) Admin Check
 			do
 				local adminCheckBind = nil
 				createToggleRow(
@@ -841,7 +853,7 @@
 				)
 			end
 
-			-- 5) Melee Aura 4 Alt MAX!
+			-- 4) Melee Aura 4 Alt MAX!
 			do
 				local meleeBind = nil
 				createToggleRow(
@@ -856,7 +868,7 @@
 				)
 			end
 
-			-- 6) Teleport Farm
+			-- 5) Teleport Farm
 			do
 				local tpBind = nil
 				createToggleRow(
@@ -872,7 +884,7 @@
 				createTPFarmTargetRow(contentFrame)
 			end
 
-			-- 7) Save EvilQueRo
+			-- 6) Save EvilQueRo
 			do
 				local scBind = nil
 				createToggleRow(
