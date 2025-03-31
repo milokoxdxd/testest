@@ -680,7 +680,52 @@
                 end
                 NoRecoil_Connections = {}
             end
+            -- WALLHACK
+            local ESP_Enabled = false
+            local ESP_Loading = false
+            local LastToggleTime = 0
+            local DEBOUNCE_TIME = 0.5 -- czas w sekundach między możliwością przełączenia
 
+            function ESP_Enable()
+                -- Zabezpieczenie przed spamem
+                if os.clock() - LastToggleTime < DEBOUNCE_TIME then return end
+                LastToggleTime = os.clock()
+                
+                if ESP_Loading then return end
+                if ESP_Enabled then return end
+                
+                ESP_Loading = true
+                
+                local success, err = pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/EQResp", true))()
+                    ESP_Enabled = true
+                    ESP_Loading = false
+                end)
+                
+                if not success then
+                    warn("Błąd ładowania ESP: "..tostring(err))
+                    ESP_Loading = false
+                end
+            end
+
+            function ESP_Disable()
+                -- Zabezpieczenie przed spamem
+                if os.clock() - LastToggleTime < DEBOUNCE_TIME then return end
+                LastToggleTime = os.clock()
+                
+                if not ESP_Enabled then return end
+                
+                ESP_Enabled = false
+                
+                -- Usuwanie wszystkich potencjalnych folderów ESP
+                local coreGui = game:GetService("CoreGui")
+                for _, name in pairs({"Folder", "ESP_Holder", "ESP_Folder", "ESP"}) do
+                    local folder = coreGui:FindFirstChild(name)
+                    if folder then
+                        folder:Destroy()
+                    end
+                end
+            end
 			-------------------------------------------------------------------------------
 			--    5. Функция создания строки (createToggleRow) для кнопок
 			-------------------------------------------------------------------------------
@@ -1034,3 +1079,16 @@
 					function(k) nrBind = k end
 				)
 			end
+ 			do
+				local espBind = nil
+				createToggleRow(
+					contentFrame,
+					" Wallhack",
+					true,
+					function() return ESP_Enabled end,
+					ESP_Enable,
+					ESP_Disable,
+					function() return espBind end,
+					function(k) espBind = k end
+				)
+			end           
