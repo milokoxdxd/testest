@@ -1,0 +1,296 @@
+-- Nowoczesny system weryfikacji klucza
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+
+-- Konfiguracja
+local VALID_KEYS = {
+    ["eqr"] = true,
+    ["scnitselpersonal"] = {users = {"xXkingdom_girlXx"}}
+}
+
+-- Tworzenie głównego interfejsu
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "KeyVerificationUI"
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Główna ramka
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 0, 0, 0) -- Początkowo niewidoczna
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+
+-- Zaokrąglenie rogów
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+-- Subtelne obramowanie
+local stroke = Instance.new("UIStroke")
+stroke.Parent = mainFrame
+stroke.Color = Color3.fromRGB(60, 60, 75)
+stroke.Thickness = 1
+stroke.Transparency = 0.5
+
+-- Nagłówek
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, -40, 0, 60)
+titleLabel.Position = UDim2.new(0, 20, 0, 10)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "VERIFICATION"
+titleLabel.Font = Enum.Font.GothamSemibold
+titleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+titleLabel.TextSize = 24
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = mainFrame
+
+-- Linia pod nagłówkiem
+local line = Instance.new("Frame")
+line.Name = "Divider"
+line.Size = UDim2.new(1, -40, 0, 1)
+line.Position = UDim2.new(0, 20, 0, 50)
+line.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+line.BorderSizePixel = 0
+line.Parent = mainFrame
+
+-- Pole wprowadzania klucza
+local inputBox = Instance.new("TextBox")
+inputBox.Name = "KeyInput"
+inputBox.Size = UDim2.new(1, -40, 0, 40)
+inputBox.Position = UDim2.new(0, 20, 0, 80)
+inputBox.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+inputBox.PlaceholderText = "Enter your access key..."
+inputBox.Text = ""
+inputBox.Font = Enum.Font.Gotham
+inputBox.TextColor3 = Color3.fromRGB(220, 220, 220)
+inputBox.TextSize = 14
+inputBox.ClearTextOnFocus = false
+inputBox.Parent = mainFrame
+
+-- Zaokrąglenie pola wprowadzania
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 8)
+inputCorner.Parent = inputBox
+
+-- Obramowanie pola wprowadzania
+local inputStroke = Instance.new("UIStroke")
+inputStroke.Parent = inputBox
+inputStroke.Color = Color3.fromRGB(60, 60, 75)
+inputStroke.Thickness = 1
+
+-- Przycisk weryfikacji
+local verifyButton = Instance.new("TextButton")
+verifyButton.Name = "VerifyButton"
+verifyButton.Size = UDim2.new(1, -40, 0, 40)
+verifyButton.Position = UDim2.new(0, 20, 0, 140)
+verifyButton.BackgroundColor3 = Color3.fromRGB(70, 180, 100) -- Zmieniony kolor na zielonkawy
+verifyButton.Text = "VERIFY"
+verifyButton.Font = Enum.Font.GothamBold
+verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+verifyButton.TextSize = 14
+verifyButton.AutoButtonColor = false
+verifyButton.Parent = mainFrame
+
+-- Zaokrąglenie przycisku
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = verifyButton
+
+-- Etykieta statusu
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "Status"
+statusLabel.Size = UDim2.new(1, -40, 0, 20)
+statusLabel.Position = UDim2.new(0, 20, 0, 190)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = ""
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 12
+statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+-- Stopka
+local footerLabel = Instance.new("TextLabel")
+footerLabel.Name = "Footer"
+footerLabel.Size = UDim2.new(1, -40, 0, 20)
+footerLabel.Position = UDim2.new(0, 20, 0, 220)
+footerLabel.BackgroundTransparency = 1
+footerLabel.Text = "© 2025 EQR HUB | v1.0.1"
+footerLabel.Font = Enum.Font.Gotham
+footerLabel.TextSize = 10
+footerLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
+footerLabel.TextXAlignment = Enum.TextXAlignment.Right
+footerLabel.Parent = mainFrame
+
+-- Animacje przycisku
+verifyButton.MouseEnter:Connect(function()
+    TweenService:Create(verifyButton, TweenInfo.new(0.15), {
+        BackgroundColor3 = Color3.fromRGB(90, 200, 120)
+    }):Play()
+end)
+
+verifyButton.MouseLeave:Connect(function()
+    TweenService:Create(verifyButton, TweenInfo.new(0.15), {
+        BackgroundColor3 = Color3.fromRGB(70, 180, 100)
+    }):Play()
+end)
+
+verifyButton.MouseButton1Down:Connect(function()
+    TweenService:Create(verifyButton, TweenInfo.new(0.1), {
+        BackgroundColor3 = Color3.fromRGB(60, 160, 90),
+        Size = UDim2.new(1, -45, 0, 38) -- Lekkie zmniejszenie
+    }):Play()
+end)
+
+verifyButton.MouseButton1Up:Connect(function()
+    TweenService:Create(verifyButton, TweenInfo.new(0.1), {
+        BackgroundColor3 = Color3.fromRGB(90, 200, 120),
+        Size = UDim2.new(1, -40, 0, 40) -- Powrót do normalnego rozmiaru
+    }):Play()
+end)
+
+-- Efekty dźwiękowe
+local soundEffects = {
+    success = Instance.new("Sound"),
+    error = Instance.new("Sound"),
+    click = Instance.new("Sound")
+}
+
+for _, sound in pairs(soundEffects) do
+    sound.SoundId = "rbxassetid://"
+    sound.Volume = 0.5
+    sound.Parent = SoundService
+end
+
+soundEffects.success.SoundId = "rbxassetid://114326413874741" -- Dźwięk sukcesu
+soundEffects.error.SoundId = "rbxassetid://80099403859001" -- Dźwięk błędu
+soundEffects.click.SoundId = "rbxassetid://6895079853" -- Dźwięk kliknięcia
+
+-- Funkcja weryfikacji klucza
+local function verifyKey()
+    soundEffects.click:Play()
+    
+    local key = inputBox.Text:lower():gsub("%s+", "")
+    local playerName = Players.LocalPlayer.Name
+    local validKey = false
+    
+    -- Sprawdź ogólne klucze
+    if VALID_KEYS[key] == true then
+        validKey = true
+    -- Sprawdź klucze specyficzne dla użytkownika
+    elseif type(VALID_KEYS[key]) == "table" then
+        for _, username in ipairs(VALID_KEYS[key].users or {}) do
+            if playerName == username then
+                validKey = true
+                break
+            end
+        end
+    end
+    
+    if validKey then
+        soundEffects.success:Play()
+        statusLabel.Text = "✓ Verification successful"
+        statusLabel.TextColor3 = Color3.fromRGB(100, 220, 100)
+        
+        -- Animacja sukcesu (pulsowanie)
+        local pulse1 = TweenService:Create(verifyButton, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(100, 220, 130),
+            Size = UDim2.new(1, -35, 0, 42)
+        })
+        
+        local pulse2 = TweenService:Create(verifyButton, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(70, 180, 100),
+            Size = UDim2.new(1, -40, 0, 40)
+        })
+        
+        pulse1:Play()
+        pulse1.Completed:Connect(function()
+            pulse2:Play()
+        end)
+        
+        -- Zamknięcie interfejsu po sukcesie
+        task.delay(0.8, function()
+            local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
+                Size = UDim2.new(0, 0, 0, 0)
+            })
+            closeTween:Play()
+            
+            closeTween.Completed:Connect(function()
+                screenGui:Destroy()
+                print("Script loading..")
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
+				wait(2)
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Access Granted",
+                    Text = "Welcome, "..playerName,
+                    Duration = 5,
+                    Icon = "rbxassetid://106154820612639",
+                    IconColor = Color3.fromRGB(80, 200, 120)
+                })
+            end)
+        end)
+    else
+        soundEffects.error:Play()
+        statusLabel.Text = "❌ Invalid key"
+        statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+        
+        -- Animacja błędu (pulsowanie czerwone)
+        local errorColor1 = TweenService:Create(verifyButton, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(220, 100, 100)
+        })
+        
+        local errorColor2 = TweenService:Create(verifyButton, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(70, 180, 100)
+        })
+        
+        errorColor1:Play()
+        errorColor1.Completed:Connect(function()
+            errorColor2:Play()
+        end)
+        
+        -- Reset po 2 sekundach
+        task.delay(2, function()
+            statusLabel.Text = ""
+        end)
+    end
+end
+
+-- Obsługa zdarzeń
+verifyButton.MouseButton1Click:Connect(verifyKey)
+
+inputBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        verifyKey()
+    end
+end)
+
+-- Animacja otwarcia
+task.wait(0.5) -- Opóźnienie dla lepszego efektu
+
+local openTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {
+    Size = UDim2.new(0, 300, 0, 250)
+})
+openTween:Play()
+
+-- Automatyczne sprawdzanie przy poprawnym kluczu
+inputBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local key = inputBox.Text:lower():gsub("%s+", "")
+    if VALID_KEYS[key] then
+        verifyKey()
+    end
+end)
+
+-- Czyszczenie przy wyjściu gracza
+Players.PlayerRemoving:Connect(function(player)
+    if player == Players.LocalPlayer then
+        screenGui:Destroy()
+    end
+end)
