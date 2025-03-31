@@ -243,7 +243,7 @@ local function verifyKey()
 		end)
 	elseif not validKey then
 		game.StarterGui:SetCore("SendNotification", {
-			Title = "Access Granted",
+			Title = "Access Denied",
 			Text = "Welcome, " .. playerName,
 			Duration = 5,
 			Icon = "rbxassetid://86145153943378",
