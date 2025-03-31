@@ -670,7 +670,7 @@
 					game:GetService("TweenService"):Create(
 						btn,
 						TweenInfo.new(0.1),
-						{BackgroundColor3 = targetColor}
+						{ BackgroundColor3 = targetColor }
 					):Play()
 				end
 
@@ -717,15 +717,10 @@
 					bindButton.MouseButton1Click:Connect(function()
 						if capturingKey then
 							capturingKey = false
-							bindButton.Text = "Bind"
+							updateBindButtonText() -- Usunięto: bindButton.Text = "Bind"
 						else
-							if getKeyBindFn() then -- Sprawdź, czy bind już istnieje
-								setKeyBindFn(nil) -- Usuń bind
-								updateBindButtonText()
-							else
-								capturingKey = true
-								bindButton.Text = "Press Key..."
-							end
+							capturingKey = true
+							bindButton.Text = "Press Key..."
 						end
 					end)
 
@@ -737,25 +732,22 @@
 								capturingKey = false
 								updateBindButtonText()
 							end
-						else
-							local kb = getKeyBindFn()
-							if kb and input.KeyCode == kb then
-								if canToggle then
-									if isEnabledFn() then
-										onDisable()
-									else
-										onEnable()
-									end
-									updateToggleButton()
+						elseif getKeyBindFn() and input.KeyCode == getKeyBindFn() then
+							if canToggle then
+								if isEnabledFn() then
+									onDisable()
 								else
-									-- jednorazowy
-									if not DeletedMob_Ran then
-										onEnable()
-										button.Text = "DONE"
-										button.BackgroundColor3 = Color3.fromRGB(0, 130, 0)
-										button.Active = false
-										bindButton.Active = false
-									end
+									onEnable()
+								end
+								updateToggleButton()
+							else
+								-- jednorazowy
+								if not DeletedMob_Ran then
+									onEnable()
+									toggleButton.Text = "DONE"
+									toggleButton.BackgroundColor3 = Color3.fromRGB(0, 130, 0)
+									toggleButton.Active = false
+									bindButton.Active = false
 								end
 							end
 						end
