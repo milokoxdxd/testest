@@ -353,8 +353,8 @@
 				local me = plrs.LocalPlayer
 				local run = game:GetService("RunService")
 
-				local remote1 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH.2")
-				local remote2 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
+				local remote1 = game:GetService("ReplicatedStorage")
+				local remote2 = game:GetService("ReplicatedStorage")
 
 				local maxdist = 20
 
@@ -443,7 +443,7 @@
 			local TPFarm_SteppedConnection = nil
 			local TPFarm_RenderConnection = nil
 			local TPFarm_CharConnection = nil
-			local DeathRespawn_Event = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("DeathRespawn")
+			local DeathRespawn_Event = game:GetService("ReplicatedStorage")
 
 			-- Локальная функция, вызываемая при спавне персонажа (CharacterAdded)
 			local function TPFarm_OnCharacterAdded(char)
@@ -765,6 +765,149 @@
                     end
                 end
             end
+            --============================ Invisibility ============================--
+            local cloneref = cloneref or function(...) return ... end;
+
+            local Service = setmetatable({}, {
+                __index = function(_, k)
+                    return cloneref(game:GetService(k));
+                end
+            });
+
+            local Player: Player = game.Players.LocalPlayer;
+            local Character: Model = Player.Character or Player.CharacterAdded:Wait();
+            local HumanoidRootPart: BasePart = Character:WaitForChild("HumanoidRootPart");
+            local Humanoid: Humanoid = Character:FindFirstChildOfClass("Humanoid") or Character:WaitForChild("Humanoid");
+
+            Player.CharacterAdded:Connect(function(NewCharacter)
+                Character = NewCharacter;
+                HumanoidRootPart = Character:WaitForChild("HumanoidRootPart");
+                Humanoid = Character:FindFirstChildOfClass("Humanoid") or Character:WaitForChild("Humanoid");
+            end)
+
+            if not Character:FindFirstChild("Torso") then
+                return game.StarterGui:SetCore("SendNotification", {
+                    Title = "FAILED",
+                    Text = "Must be R6",
+                    Duration = 5,
+                });
+            end
+
+            local function Grounded()
+                return Humanoid and Humanoid.Parent and Humanoid.FloorMaterial ~= Enum.Material.Air;
+            end
+
+            local InvisEnabled = false;
+            local InvisConnections = {};
+
+            local RunService: RunService = Service.RunService;
+            local Heartbeat = RunService.Heartbeat;
+            local RenderStepped = RunService.RenderStepped;
+
+            local GUI = Instance.new("ScreenGui");
+            GUI.Name = "WarningGUI";
+            GUI.Parent = Service.CoreGui;
+
+            local WarnLabel = Instance.new("TextLabel", GUI);
+            WarnLabel.Text = "⚠️You are visible⚠️";
+            WarnLabel.Visible = false;
+            WarnLabel.Position = UDim2.new(0.5, 0, 0.75, 0);
+            WarnLabel.AnchorPoint = Vector2.new(0.5, 0.5);
+            WarnLabel.TextSize = 32;
+            WarnLabel.TextColor3 = Color3.fromRGB(190, 190, 190);
+            WarnLabel.BackgroundTransparency = 1;
+            WarnLabel.TextStrokeTransparency = 0;
+            WarnLabel.Font = Enum.Font.SourceSansBold;
+
+            local function ApplyInvisibility()
+                if not Character then return end;
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Transparency ~= 1 then
+                        v.Transparency = 0.5;
+                    end
+                end
+                workspace.CurrentCamera.CameraSubject = HumanoidRootPart;
+            end
+
+            local function RevertVisibility()
+                if not Character then return end;
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.Transparency = 0;
+                    end
+                end
+                workspace.CurrentCamera.CameraSubject = Humanoid; -- Przywrócenie Subjectu kamery
+                WarnLabel.Visible = false;
+            end
+
+            local function InvisLoop()
+                if InvisEnabled and Character and Humanoid and HumanoidRootPart then
+                    WarnLabel.Visible = not Grounded();
+
+                    local CF = CFrame;
+                    local _, y = workspace.CurrentCamera.CFrame:ToOrientation();
+                    HumanoidRootPart.CFrame = CF.new(HumanoidRootPart.CFrame.Position) * CF.fromOrientation(0, y, 0);
+
+                    local OldCFrame = HumanoidRootPart.CFrame;
+                    local OldCameraOffset = Humanoid.CameraOffset;
+
+                    HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CF.Angles(math.rad(90), 0, 0);
+                    Humanoid.CameraOffset = Vector3.new(0, 1.44, 0);
+
+                    local Animation = Instance.new("Animation");
+                    Animation.AnimationId = "rbxassetid://215384594";
+
+                    local Track = Humanoid:LoadAnimation(Animation);
+                    Track.Priority = Enum.AnimationPriority.Action4;
+                    Track:Play();
+                    Track:AdjustSpeed(0);
+                    Track.TimePosition = 0.3;
+
+                    RenderStepped:Wait();
+
+                    Humanoid.CameraOffset = OldCameraOffset;
+                    HumanoidRootPart.CFrame = OldCFrame;
+
+                    Track:Stop();
+
+                    local LookVector = workspace.CurrentCamera.CFrame.LookVector;
+                    local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z).Unit;
+                    local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal);
+                    HumanoidRootPart.CFrame = TargetCFrame;
+
+                    ApplyInvisibility();
+                elseif Character then
+                    for _, v in pairs(Character:GetDescendants()) do
+                        if v:IsA("BasePart") and v.Transparency == 0.5 then
+                            v.Transparency = 0;
+                        end
+                    end
+                    workspace.CurrentCamera.CameraSubject = Humanoid; -- Upewniamy się, że kamera wraca na Humanoid
+                    WarnLabel.Visible = false;
+                end
+            end
+
+            function Invis_Enable()
+                if InvisEnabled then return end;
+                InvisEnabled = true;
+                if #InvisConnections == 0 then
+                    table.insert(InvisConnections, Heartbeat:Connect(InvisLoop));
+                end
+            end
+
+            function Invis_Disable()
+                if not InvisEnabled then return end;
+                InvisEnabled = false;
+                -- Przywrócenie Subjectu kamery jest teraz również w InvisLoop
+            end
+
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "LOADED",
+                Text = "Invisibility functions loaded | @helloitsme#4243",
+                Duration = 5,
+            });
+
+            -- Teraz możesz wywoływać Invis_Enable() i Invis_Disable() z innego skryptu.
 			-------------------------------------------------------------------------------
 			--    5. Функция создания строки (createToggleRow) для кнопок
 			-------------------------------------------------------------------------------
@@ -1118,6 +1261,7 @@
 					function(k) nrBind = k end
 				)
 			end
+            -- 7) ESP
  			do
 				local espBind = nil
 				createToggleRow(
@@ -1131,3 +1275,17 @@
 					function(k) espBind = k end
 				)
 			end           
+            -- 8) Invisibility
+            do
+                local invisBind = nil
+                createToggleRow(
+                    contentFrame,
+                    " Invisibility",
+                    true,
+                    function() return InvisEnabled end,
+                    Invis_Enable,
+                    Invis_Disable,
+                    function() return invisBind end,
+                    function(k) invisBind = k end
+                )
+            end
