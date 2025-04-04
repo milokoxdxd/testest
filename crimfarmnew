@@ -353,8 +353,8 @@
 				local me = plrs.LocalPlayer
 				local run = game:GetService("RunService")
 
-				local remote1 = game:GetService("ReplicatedStorage")
-				local remote2 = game:GetService("ReplicatedStorage")
+				local remote1 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH.2")
+				local remote2 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
 
 				local maxdist = 20
 
@@ -443,7 +443,7 @@
 			local TPFarm_SteppedConnection = nil
 			local TPFarm_RenderConnection = nil
 			local TPFarm_CharConnection = nil
-			local DeathRespawn_Event = game:GetService("ReplicatedStorage")
+			local DeathRespawn_Event = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("DeathRespawn")
 
 			-- Локальная функция, вызываемая при спавне персонажа (CharacterAdded)
 			local function TPFarm_OnCharacterAdded(char)
