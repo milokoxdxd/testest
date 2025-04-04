@@ -437,7 +437,7 @@
 
 			--======================= Teleport Farm =========================--
 			local TPFarm_Enabled = false
-			local TPFarm_TargetName = "BIOODHAV0C"
+			local TPFarm_TargetName = "PixelDancerPrism"
 
 			-- Сохраняем все подключения, чтобы отключать при Disable
 			local TPFarm_SteppedConnection = nil
