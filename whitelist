@@ -7,7 +7,6 @@ local SoundService = game:GetService("SoundService")
 local VALID_KEYS = {
 	["eloelo320"] = true,
 	["scnitselpersonal"] = { users = { "xXkingdom_girlXx","PixelDancerPrism","ZeusDiary" } }
-        ["thiscodeisonlyforyousenku"] = { users = { "Abu_fardin" } }
 }
 
 -- Tworzenie głównego interfejsu
