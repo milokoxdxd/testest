@@ -901,12 +901,6 @@
                 -- Przywrócenie Subjectu kamery jest teraz również w InvisLoop
             end
 
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "LOADED",
-                Text = "Invisibility functions loaded | @helloitsme#4243",
-                Duration = 5,
-            });
-
             -- Teraz możesz wywoływać Invis_Enable() i Invis_Disable() z innego skryptu.
 			-------------------------------------------------------------------------------
 			--    5. Функция создания строки (createToggleRow) для кнопок
