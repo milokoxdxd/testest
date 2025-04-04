@@ -536,10 +536,10 @@
 				end
 			end
 
-			--================= 3 Save-кнопки (Cube/Vibecheck/Mountain) =======
-			local event = DeathRespawn_Event  -- Сократим название
+			--================= 3 Save-Places (Cube/Vibecheck/Mountain) =======
+			local event = DeathRespawn_Event
 
-			-- 1) Save Cube
+			-- 1) Save EQR
 			local SaveCube_Enabled = false
 			local SaveCube_Connection
 			local SaveCube_Position = Vector3.new(-4597, -152, -1326)
@@ -581,6 +581,48 @@
 					SaveCube_Connection = nil
 				end
 			end
+            -- 2) Save Sewers
+			local SaveSewers_Enabled = false
+			local SaveSewers_Connection
+			local SaveSewers_Position = Vector3.new(-4162, -84, -498)
+
+			local function SaveSewers_Enable()
+				if SaveSewers_Enabled then return end
+				SaveSewers_Enabled = true
+				local killpart = game.Workspace.Filter.Parts:FindFirstChild("Kill_Brick")
+				if killpart then
+					killpart:Destroy()
+				end
+
+				SaveSewers_Connection = RunService.RenderStepped:Connect(function()
+					if not SaveSewers_Enabled then return end
+					local char = LocalPlayer.Character
+					if char then
+						local hrp = char:FindFirstChild("HumanoidRootPart")
+						local hum = char:FindFirstChildOfClass("Humanoid")
+						if hrp then
+							hrp.CFrame = CFrame.new(SaveSewers_Position)
+						end
+						local tool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+						if tool and tool.Parent ~= char then
+							wait(1)
+							tool.Parent = char
+						end
+						if hum and hum.Health <= 0 then
+							event:InvokeServer("KMG4R904") -- авто возрождение
+						end
+					end
+				end)
+			end
+
+			local function SaveSewers_Disable()
+				if not SaveSewers_Enabled then return end
+				SaveSewers_Enabled = false
+				if SaveSewers_Connection then
+					SaveSewers_Connection:Disconnect()
+					SaveSewers_Connection = nil
+				end
+			end           
 
             -- NoRecoil Function
             local NoRecoil_Enabled = false
@@ -1228,17 +1270,31 @@
 			end
 
 			-- 6) Save EvilQueRo
+			--do
+			--	local scBind = nil
+			--	createToggleRow(
+			--		contentFrame,
+			--		" Save EQR PLACE",
+			--		true,
+			--		function() return SaveCube_Enabled end,
+			--		SaveCube_Enable,
+			--		SaveCube_Disable,
+			--		function() return scBind end,
+			--		function(k) scBind = k end
+			--	)
+			--end
+            -- 6) Save Sewers
 			do
-				local scBind = nil
+				local ssBind = nil
 				createToggleRow(
 					contentFrame,
-					" Save EQR PLACE",
+					" Save Sewers",
 					true,
-					function() return SaveCube_Enabled end,
-					SaveCube_Enable,
-					SaveCube_Disable,
-					function() return scBind end,
-					function(k) scBind = k end
+					function() return SaveSewers_Enabled end,
+					SaveSewers_Enable,
+					SaveSewers_Disable,
+					function() return ssBind end,
+					function(k) ssBind = k end
 				)
 			end
             -- 7) NoRecoil
