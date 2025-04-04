@@ -878,12 +878,16 @@
                         v.Transparency = 0;
                     end
                 end
-                workspace.CurrentCamera.CameraSubject = Humanoid; -- Przywrócenie Subjectu kamery
+                if Humanoid and Humanoid.Parent then -- Sprawdzamy, czy Humanoid nadal istnieje
+                    workspace.CurrentCamera.CameraSubject = Humanoid; -- Przywrócenie Subjectu kamery
+                else
+                    workspace.CurrentCamera.CameraSubject = workspace.CurrentCamera.Focus; -- Alternatywne ustawienie kamery
+                end
                 WarnLabel.Visible = false;
             end
 
             local function InvisLoop()
-                if InvisEnabled and Character and Humanoid and HumanoidRootPart then
+                if InvisEnabled and Character and Humanoid and HumanoidRootPart and Humanoid:IsDescendantOf(workspace) then -- Dodatkowe sprawdzenie, czy Humanoid nadal istnieje w workspace
                     WarnLabel.Visible = not Grounded();
 
                     local CF = CFrame;
@@ -900,32 +904,32 @@
                     Animation.AnimationId = "rbxassetid://215384594";
 
                     local Track = Humanoid:LoadAnimation(Animation);
-                    Track.Priority = Enum.AnimationPriority.Action4;
-                    Track:Play();
-                    Track:AdjustSpeed(0);
-                    Track.TimePosition = 0.3;
+                    if Track then -- Sprawdzamy, czy animacja została załadowana pomyślnie
+                        Track.Priority = Enum.AnimationPriority.Action4;
+                        Track:Play();
+                        Track:AdjustSpeed(0);
+                        Track.TimePosition = 0.3;
 
-                    RenderStepped:Wait();
+                        RenderStepped:Wait();
 
-                    Humanoid.CameraOffset = OldCameraOffset;
-                    HumanoidRootPart.CFrame = OldCFrame;
+                        Humanoid.CameraOffset = OldCameraOffset;
+                        HumanoidRootPart.CFrame = OldCFrame;
 
-                    Track:Stop();
+                        Track:Stop();
 
-                    local LookVector = workspace.CurrentCamera.CFrame.LookVector;
-                    local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z).Unit;
-                    local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal);
-                    HumanoidRootPart.CFrame = TargetCFrame;
+                        local LookVector = workspace.CurrentCamera.CFrame.LookVector;
+                        local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z).Unit;
+                        local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal);
+                        HumanoidRootPart.CFrame = TargetCFrame;
 
-                    ApplyInvisibility();
-                elseif Character then
-                    for _, v in pairs(Character:GetDescendants()) do
-                        if v:IsA("BasePart") and v.Transparency == 0.5 then
-                            v.Transparency = 0;
-                        end
+                        ApplyInvisibility();
+                    else
+                        warn("Nie udało się załadować animacji dla niewidzialności.");
+                        RevertVisibility();
+                        Invis_Disable();
                     end
-                    workspace.CurrentCamera.CameraSubject = Humanoid; -- Upewniamy się, że kamera wraca na Humanoid
-                    WarnLabel.Visible = false;
+                elseif Character then
+                    RevertVisibility(); -- Upewniamy się, że widoczność jest przywracana, gdy warunki niewidzialności nie są spełnione
                 end
             end
 
@@ -935,12 +939,18 @@
                 if #InvisConnections == 0 then
                     table.insert(InvisConnections, Heartbeat:Connect(InvisLoop));
                 end
+                ApplyInvisibility(); -- Natychmiastowo zastosuj niewidzialność po włączeniu
             end
 
             function Invis_Disable()
                 if not InvisEnabled then return end;
                 InvisEnabled = false;
-                -- Przywrócenie Subjectu kamery jest teraz również w InvisLoop
+                RevertVisibility(); -- Przywróć widoczność po wyłączeniu
+                -- Rozłącz wszystkie połączenia Heartbeat
+                for _, connection in ipairs(InvisConnections) do
+                    connection:Disconnect();
+                end
+                table.clear(InvisConnections);
             end
 
             -- Teraz możesz wywoływać Invis_Enable() i Invis_Disable() z innego skryptu.
