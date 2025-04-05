@@ -437,7 +437,7 @@
 
 			--======================= Teleport Farm =========================--
 			local TPFarm_Enabled = false
-			local TPFarm_TargetName = "PixelDancerPrism"
+			local TPFarm_TargetName = "Type ALT account name.."
 
 			-- Сохраняем все подключения, чтобы отключать при Disable
 			local TPFarm_SteppedConnection = nil
@@ -629,6 +629,156 @@
                     AntiFling_Connection = nil
                 end
             end
+            --======================= AIMBOT =========================--
+            local players = game:GetService("Players")
+            local localPlayer = players.LocalPlayer
+            local CurrentCamera = workspace.CurrentCamera
+            local TweenService = game:GetService("TweenService")
+            local UserInputService = game:GetService("UserInputService")
+            local mouseLocation = UserInputService.GetMouseLocation
+            local RunService = game:GetService("RunService")
+
+            local AimBotSettings = {
+                Enabled = false;
+                TeamCheck = false;
+                WallCheck = true;
+                StickyAim = false;
+
+                UseMouse = true;
+                MouseBind = "MouseButton2";
+                Keybind = Enum.KeyCode.E;
+
+                ShowFov = false;
+                Fov = 100;
+
+                Smoothing = 0.02;
+                AimPart = "HumanoidRootPart";
+
+                IsAimKeyDown = false;
+                Target = nil;
+                CameraTween = nil;
+            }
+
+            local function IsAlive(Player)
+                return Player and Player.Character and Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0
+            end
+
+            local function GetTeam(Player)
+                if not game.Players.LocalPlayer.Neutral and game:GetService("Teams"):FindFirstChild(Player.Team.Name) then
+                    return game:GetService("Teams")[Player.Team.Name];
+                end
+                return nil;
+            end
+
+            local function isVisible(part, character)
+                if not AimBotSettings.WallCheck then
+                    return true;
+                end
+
+                local ignoreList = {CurrentCamera, localPlayer.Character}
+                if character and character.Head and character.Head.Parent then
+                    table.insert(ignoreList, character.Head.Parent)
+                end
+
+                return #CurrentCamera:GetPartsObscuringTarget({part}, ignoreList) == 0;
+            end
+
+            local function CameraGetClosestToMouse() -- Renamed to match original
+                local AimFov = AimBotSettings.Fov;
+                local targetPos = nil;
+
+                for i, v in pairs(game:GetService("Players"):GetPlayers()) do
+                    if v ~= localPlayer then
+                        if AimBotSettings.TeamCheck ~= true or GetTeam(v) ~= GetTeam(localPlayer) then
+                            if IsAlive(v) then
+                                local screen_pos, on_screen = CurrentCamera:WorldToViewportPoint(v.Character[AimBotSettings.AimPart].Position)
+                                local screen_pos_2D = Vector2.new(screen_pos.X, screen_pos.Y)
+                                local new_magnitude = (screen_pos_2D - mouseLocation(UserInputService)).Magnitude
+                                if on_screen and new_magnitude < AimFov and isVisible(v.Character[AimBotSettings.AimPart].Position, v.Character.Head.Parent) then
+                                    AimFov = new_magnitude;
+                                    targetPos = v;
+                                end
+                            end
+                        end
+                    end
+                end
+                return targetPos;
+            end
+
+            UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+                if gameProcessedEvent then return end
+                if not AimBotSettings.UseMouse and input.KeyCode == AimBotSettings.Keybind then
+                    AimBotSettings.Target = CameraGetClosestToMouse(); -- Changed to match original
+                    AimBotSettings.IsAimKeyDown = true;
+                elseif AimBotSettings.UseMouse then
+                    local bind = ""
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        bind = "MouseButton1"
+                    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                        bind = "MouseButton2"
+                    end
+
+                    if bind == AimBotSettings.MouseBind then
+                        AimBotSettings.Target = CameraGetClosestToMouse(); -- Changed to match original
+                        AimBotSettings.IsAimKeyDown = true;
+                    end
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
+                if gameProcessedEvent then return end
+                if not AimBotSettings.UseMouse and input.KeyCode == AimBotSettings.Keybind then
+                    AimBotSettings.IsAimKeyDown = false;
+                    AimBotSettings.Target = nil;
+                    if AimBotSettings.CameraTween then
+                        AimBotSettings.CameraTween:Cancel();
+                        AimBotSettings.CameraTween = nil;
+                    end
+                elseif AimBotSettings.UseMouse then
+                    local bind = ""
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        bind = "MouseButton1"
+                    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                        bind = "MouseButton2"
+                    end
+
+                    if bind == AimBotSettings.MouseBind then
+                        AimBotSettings.IsAimKeyDown = false;
+                        AimBotSettings.Target = nil;
+                        if AimBotSettings.CameraTween then
+                            AimBotSettings.CameraTween:Cancel();
+                            AimBotSettings.CameraTween = nil;
+                        end
+                    end
+                end
+            end)
+
+            RunService.Heartbeat:Connect(function(deltaTime)
+                if AimBotSettings.Enabled then -- Simplified Enabled check
+                    if AimBotSettings.IsAimKeyDown then
+                        if AimBotSettings.StickyAim then
+                            if AimBotSettings.Target ~= nil then
+                                if not IsAlive(AimBotSettings.Target) then
+                                    local target = CameraGetClosestToMouse()
+                                    AimBotSettings.Target = target;
+                                    AimBotSettings.CameraTween = TweenService:Create(CurrentCamera, TweenInfo.new(AimBotSettings.Smoothing, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFrame.new(CurrentCamera.CFrame.Position, target.Character[AimBotSettings.AimPart].Position + target.Character[AimBotSettings.AimPart].Velocity * (localPlayer:GetNetworkPing() * Vector3.new()))});
+                                    AimBotSettings.CameraTween:Play();
+                                end
+                                AimBotSettings.CameraTween = TweenService:Create(CurrentCamera, TweenInfo.new(AimBotSettings.Smoothing, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFrame.new(CurrentCamera.CFrame.Position, AimBotSettings.Target.Character[AimBotSettings.AimPart].Position + AimBotSettings.Target.Character[AimBotSettings.AimPart].Velocity * (localPlayer:GetNetworkPing() * Vector3.new()))});
+                                AimBotSettings.CameraTween:Play();
+                            end
+                        else
+                            local target = CameraGetClosestToMouse();
+                            if target ~= nil then
+                                AimBotSettings.CameraTween = TweenService:Create(CurrentCamera, TweenInfo.new(AimBotSettings.Smoothing, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFrame.new(CurrentCamera.CFrame.Position,  target.Character[AimBotSettings.AimPart].Position + target.Character[AimBotSettings.AimPart].Velocity * (localPlayer:GetNetworkPing() * Vector3.new()))});
+                                AimBotSettings.CameraTween:Play();
+                            elseif AimBotSettings.CameraTween ~= nil then
+                                AimBotSettings.CameraTween:Cancel();
+                            end
+                        end
+                    end
+                end
+            end)
 			--======================= INVISIBILITY =========================--
 			repeat task.wait() until game:IsLoaded();
 
@@ -1426,7 +1576,32 @@
 					function() return espBind end,
 					function(k) espBind = k end
 				)
-			end           
+			end
+            do
+                local aimbotEnabledBind = nil
+                createToggleRow(
+                    contentFrame,
+                    " Aimbot",
+                    true,
+                    function() return AimBotSettings.Enabled end,
+                    function()
+                        AimBotSettings.Enabled = true
+                        print("Aimbot Enabled")
+                    end,
+                    function()
+                        AimBotSettings.Enabled = false
+                        AimBotSettings.IsAimKeyDown = false
+                        AimBotSettings.Target = nil
+                        if AimBotSettings.CameraTween then
+                            AimBotSettings.CameraTween:Cancel()
+                            AimBotSettings.CameraTween = nil
+                        end
+                        print("Aimbot Disabled")
+                    end,
+                    function() return aimbotEnabledBind end,
+                    function(k) aimbotEnabledBind = k end
+                )
+            end
             -- 8) Invisibility
             do
                 local invisBind = nil
