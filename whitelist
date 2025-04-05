@@ -1,306 +1,250 @@
--- Nowoczesny system weryfikacji klucza
+-- [[ Services ]] --
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
+local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 
--- Konfiguracja
-local VALID_KEYS = {
-	["eloelo320"] = true,
-	["scnitselpersonal"] = { users = { "xXkingdom_girlXx","PixelDancerPrism","ZeusDiary" } }
+-- [[ Configuration ]] --
+local Webhook_URL = "https://discord.com/api/webhooks/1357995769826906204/yxzJQ3M_SxVjNJd2WknRRl1Dd0UG1P6NmOtzJoKfqehEI6MfnTEFJt4R17LZso_AFvO9" -- << NEW WEBHOOK URL >>
+local userHwid = RbxAnalyticsService:GetClientId()
+local localPlayer = Players.LocalPlayer
+local playerName = localPlayer.DisplayName or localPlayer.Name
+
+-- ======================================================================= --
+-- || Configure Admin Keys (Bypass HWID check)                          || --
+-- ======================================================================= --
+local ADMIN_KEYS = {
+    ["eloelo320"] = true, -- Example: Replace/add your admin keys
+    ["gwagwagwagwa"] = true
 }
+-- ======================================================================= --
 
--- Tworzenie głównego interfejsu
+-- ======================================================================= --
+-- || Configure Regular Keys and their associated HWIDs                 || --
+-- ======================================================================= --
+local VALID_KEYS_HWID_MAP = {
+    ["thefirstkey"] = {
+        ["HWID_ALLOWED_FOR_KEY1_A"] = true, -- Example: Replace with actual HWID
+        ["HWID_ALLOWED_FOR_KEY1_B"] = true
+    },
+    ["anotherkey123"] = {
+        ["HWID_ALLOWED_FOR_KEY2"] = true    -- Example: Replace with actual HWID
+    },
+}
+-- ======================================================================= --
+
+
+-- [[ Webhook Function ]] --
+local function sendWebhook(title, description, color, fields)
+    if not HttpService then warn("HttpService not available!") return end
+    if not request then warn("Global 'request' function not available! Webhook not sent.") return end
+    local data = { content = "", embeds = {{ title = title, description = description, type = "rich", color = color, fields = fields or {}, footer = { text = "EQR HUB Whitelist | " .. os.date("!%Y-%m-%d %H:%M:%S UTC") } }} }
+    local success, err = pcall(function() request({ Url = Webhook_URL, Method = 'POST', Headers = { ['Content-Type'] = 'application/json' }, Body = HttpService:JSONEncode(data) }) end)
+    if not success then warn("Webhook error: ", err) end
+end
+
+-- [[ Initial Webhook Notification ]] --
+sendWebhook( "🚀 Script Executed", "`" .. playerName .. "` executed verification.", 0x5865F2, { { name = "👤 User", value = playerName, inline = true }, { name = "💻 HWID", value = userHwid, inline = true } } )
+
+-- [[ UI Creation (Original Appearance) ]] --
 local screenGui = Instance.new("ScreenGui")
-screenGui.ResetOnSpawn = false
-screenGui.Name = "KeyVerificationUI"
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-
--- Główna ramka
+screenGui.ResetOnSpawn = false; screenGui.Name = "KeyVerificationUI"; screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 0, 0, 0) -- Początkowo niewidoczna
-mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.Parent = screenGui
-
--- Zaokrąglenie rogów
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = mainFrame
-
--- Subtelne obramowanie
-local stroke = Instance.new("UIStroke")
-stroke.Parent = mainFrame
-stroke.Color = Color3.fromRGB(60, 60, 75)
-stroke.Thickness = 1
-stroke.Transparency = 0.5
-
--- Nagłówek
+mainFrame.Name = "MainFrame"; mainFrame.Size = UDim2.new(0,0,0,0); mainFrame.Position = UDim2.new(0.5,0,0.5,0); mainFrame.AnchorPoint = Vector2.new(0.5,0.5); mainFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); mainFrame.BorderSizePixel = 0; mainFrame.ClipsDescendants = true; mainFrame.Parent = screenGui
+local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0,12); corner.Parent = mainFrame
+local stroke = Instance.new("UIStroke"); stroke.Parent = mainFrame; stroke.Color = Color3.fromRGB(60,60,75); stroke.Thickness = 1; stroke.Transparency = 0.5
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, -40, 0, 60)
-titleLabel.Position = UDim2.new(0, 20, 0, 10)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "VERIFICATION"
-titleLabel.Font = Enum.Font.GothamSemibold
-titleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-titleLabel.TextSize = 24
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = mainFrame
-
--- Linia pod nagłówkiem
+titleLabel.Name = "Title"; titleLabel.Size = UDim2.new(1,-40,0,60); titleLabel.Position = UDim2.new(0,20,0,10); titleLabel.BackgroundTransparency = 1; titleLabel.Text = "VERIFICATION"; titleLabel.Font = Enum.Font.GothamSemibold; titleLabel.TextColor3 = Color3.fromRGB(220,220,220); titleLabel.TextSize = 24; titleLabel.TextXAlignment = Enum.TextXAlignment.Left; titleLabel.Parent = mainFrame
 local line = Instance.new("Frame")
-line.Name = "Divider"
-line.Size = UDim2.new(1, -40, 0, 1)
-line.Position = UDim2.new(0, 20, 0, 50)
-line.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
-line.BorderSizePixel = 0
-line.Parent = mainFrame
-
--- Pole wprowadzania klucza
+line.Name = "Divider"; line.Size = UDim2.new(1,-40,0,1); line.Position = UDim2.new(0,20,0,50); line.BackgroundColor3 = Color3.fromRGB(60,60,75); line.BorderSizePixel = 0; line.Parent = mainFrame
 local inputBox = Instance.new("TextBox")
-inputBox.Name = "KeyInput"
-inputBox.Size = UDim2.new(1, -40, 0, 40)
-inputBox.Position = UDim2.new(0, 20, 0, 80)
-inputBox.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-inputBox.PlaceholderText = "Enter your access key..."
-inputBox.Text = ""
-inputBox.Font = Enum.Font.Gotham
-inputBox.TextColor3 = Color3.fromRGB(220, 220, 220)
-inputBox.TextSize = 14
-inputBox.ClearTextOnFocus = false
-inputBox.Parent = mainFrame
-
--- Zaokrąglenie pola wprowadzania
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 8)
-inputCorner.Parent = inputBox
-
--- Obramowanie pola wprowadzania
-local inputStroke = Instance.new("UIStroke")
-inputStroke.Parent = inputBox
-inputStroke.Color = Color3.fromRGB(60, 60, 75)
-inputStroke.Thickness = 1
-
--- Przycisk weryfikacji
+inputBox.Name = "KeyInput"; inputBox.Size = UDim2.new(1,-40,0,40); inputBox.Position = UDim2.new(0,20,0,80); inputBox.BackgroundColor3 = Color3.fromRGB(25,25,30); inputBox.PlaceholderText = "Enter your access key..."; inputBox.Text = ""; inputBox.Font = Enum.Font.Gotham; inputBox.TextColor3 = Color3.fromRGB(220,220,220); inputBox.TextSize = 14; inputBox.ClearTextOnFocus = false; inputBox.Parent = mainFrame
+local inputCorner = Instance.new("UICorner"); inputCorner.CornerRadius = UDim.new(0,8); inputCorner.Parent = inputBox
+local inputStroke = Instance.new("UIStroke"); inputStroke.Parent = inputBox; inputStroke.Color = Color3.fromRGB(60,60,75); inputStroke.Thickness = 1
 local verifyButton = Instance.new("TextButton")
-verifyButton.Name = "VerifyButton"
-verifyButton.Size = UDim2.new(1, -40, 0, 40)
-verifyButton.Position = UDim2.new(0, 20, 0, 140)
-verifyButton.BackgroundColor3 = Color3.fromRGB(70, 180, 100) -- Zmieniony kolor na zielonkawy
-verifyButton.Text = "VERIFY"
-verifyButton.Font = Enum.Font.GothamBold
-verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-verifyButton.TextSize = 14
-verifyButton.AutoButtonColor = false
-verifyButton.Parent = mainFrame
-
--- Zaokrąglenie przycisku
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 8)
-buttonCorner.Parent = verifyButton
-
--- Etykieta statusu
+verifyButton.Name = "VerifyButton"; verifyButton.Size = UDim2.new(1,-40,0,40); verifyButton.Position = UDim2.new(0,20,0,140); verifyButton.BackgroundColor3 = Color3.fromRGB(70,180,100); verifyButton.Text = "VERIFY"; verifyButton.Font = Enum.Font.GothamBold; verifyButton.TextColor3 = Color3.fromRGB(255,255,255); verifyButton.TextSize = 14; verifyButton.AutoButtonColor = false; verifyButton.Parent = mainFrame
+local buttonCorner = Instance.new("UICorner"); buttonCorner.CornerRadius = UDim.new(0,8); buttonCorner.Parent = verifyButton
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "Status"
-statusLabel.Size = UDim2.new(1, -40, 0, 20)
-statusLabel.Position = UDim2.new(0, 20, 0, 190)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = ""
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextSize = 12
-statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = mainFrame
-
--- Stopka
+statusLabel.Name = "Status"; statusLabel.Size = UDim2.new(1,-40,0,20); statusLabel.Position = UDim2.new(0,20,0,190); statusLabel.BackgroundTransparency = 1; statusLabel.Text = ""; statusLabel.Font = Enum.Font.Gotham; statusLabel.TextSize = 12; statusLabel.TextColor3 = Color3.fromRGB(220,100,100); statusLabel.TextXAlignment = Enum.TextXAlignment.Left; statusLabel.Parent = mainFrame
 local footerLabel = Instance.new("TextLabel")
-footerLabel.Name = "Footer"
-footerLabel.Size = UDim2.new(1, -40, 0, 20)
-footerLabel.Position = UDim2.new(0, 20, 0, 220)
-footerLabel.BackgroundTransparency = 1
-footerLabel.Text = "© 2025 EQR HUB | v1.0.5"
-footerLabel.Font = Enum.Font.Gotham
-footerLabel.TextSize = 10
-footerLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
-footerLabel.TextXAlignment = Enum.TextXAlignment.Right
-footerLabel.Parent = mainFrame
+footerLabel.Name = "Footer"; footerLabel.Size = UDim2.new(1,-40,0,20); footerLabel.Position = UDim2.new(0,20,0,220); footerLabel.BackgroundTransparency = 1; footerLabel.Text = "© 2025 EQR HUB | v1.0.5"; footerLabel.Font = Enum.Font.Gotham; footerLabel.TextSize = 10; footerLabel.TextColor3 = Color3.fromRGB(100,100,120); footerLabel.TextXAlignment = Enum.TextXAlignment.Right; footerLabel.Parent = mainFrame
 
--- Animacje przycisku
-verifyButton.MouseEnter:Connect(function()
-	TweenService:Create(verifyButton, TweenInfo.new(0.15), {
-		BackgroundColor3 = Color3.fromRGB(90, 200, 120)
-	}):Play()
-end)
+-- [[ Button Animations (Unchanged) ]] --
+verifyButton.MouseEnter:Connect(function() TweenService:Create(verifyButton, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(90, 200, 120) }):Play() end)
+verifyButton.MouseLeave:Connect(function() TweenService:Create(verifyButton, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(70, 180, 100) }):Play() end)
+verifyButton.MouseButton1Down:Connect(function() TweenService:Create(verifyButton, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(60, 160, 90), Size = UDim2.new(1, -45, 0, 38) }):Play() end)
+verifyButton.MouseButton1Up:Connect(function() TweenService:Create(verifyButton, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(90, 200, 120), Size = UDim2.new(1, -40, 0, 40) }):Play() end)
 
-verifyButton.MouseLeave:Connect(function()
-	TweenService:Create(verifyButton, TweenInfo.new(0.15), {
-		BackgroundColor3 = Color3.fromRGB(70, 180, 100)
-	}):Play()
-end)
+-- [[ Sound Effects (Unchanged) ]] --
+local soundEffects = { success = Instance.new("Sound"), error = Instance.new("Sound"), click = Instance.new("Sound") }
+for _,s in pairs(soundEffects) do s.Volume=0.5; s.Parent=SoundService end; soundEffects.success.SoundId="rbxassetid://114326413874741"; soundEffects.error.SoundId="rbxassetid://80099403859001"; soundEffects.click.SoundId="rbxassetid://6895079853"
 
-verifyButton.MouseButton1Down:Connect(function()
-	TweenService:Create(verifyButton, TweenInfo.new(0.1), {
-		BackgroundColor3 = Color3.fromRGB(60, 160, 90),
-		Size = UDim2.new(1, -45, 0, 38) -- Lekkie zmniejszenie
-	}):Play()
-end)
+-- [[ Access Flag ]] --
+local accessGrantedFlag = false
 
-verifyButton.MouseButton1Up:Connect(function()
-	TweenService:Create(verifyButton, TweenInfo.new(0.1), {
-		BackgroundColor3 = Color3.fromRGB(90, 200, 120),
-		Size = UDim2.new(1, -40, 0, 40) -- Powrót do normalnego rozmiaru
-	}):Play()
-end)
+-- [[ Verification Function (Handles Admin Keys, Regular Keys + HWID) ]] --
+local function verifyAccess()
+    if accessGrantedFlag then return end -- Don't re-verify if already granted
 
--- Efekty dźwiękowe
-local soundEffects = {
-	success = Instance.new("Sound"),
-	error = Instance.new("Sound"),
-	click = Instance.new("Sound")
-}
+    -- We only play the click sound if verification is triggered manually,
+    -- otherwise it plays non-stop while typing a valid key.
+    -- soundEffects.click:Play() -- Moved sound play to manual triggers
 
-for _, sound in pairs(soundEffects) do
-	sound.SoundId = "rbxassetid://"
-	sound.Volume = 0.5
-	sound.Parent = SoundService
+    local enteredKey = inputBox.Text:lower():gsub("%s+", "") -- Normalize key
+    local grantAccess = false
+    local failureReason = "Unknown Error"
+    local isAdminKeyUsed = false
+
+    -- Check 1: Is it an Admin Key?
+    if ADMIN_KEYS[enteredKey] == true then
+        grantAccess = true
+        isAdminKeyUsed = true
+    else
+        -- Check 2: If not admin, check regular key & HWID map
+        local allowedHwidsForKey = VALID_KEYS_HWID_MAP[enteredKey]
+        local isKeyValid = allowedHwidsForKey ~= nil
+
+        if isKeyValid and type(allowedHwidsForKey) == "table" then
+            local isHwidAllowedForKey = allowedHwidsForKey[userHwid] == true
+            if isHwidAllowedForKey then grantAccess = true else failureReason = "HWID not authorized for this key" end
+        else
+            -- Only set failureReason if the key isn't an admin key *and* isn't in the regular map
+            if not isAdminKeyUsed then failureReason = "Invalid Key" end
+            -- If the input box text is currently empty or doesn't match any known key structure yet during typing,
+            -- we don't necessarily want to show an error immediately or send a webhook,
+            -- so we only proceed to denial if grantAccess is definitively false after checks.
+        end
+    end
+
+    -- Handle Outcome (Grant or Deny)
+    -- Only proceed fully if access is granted OR if it's definitively denied (key typed doesn't match anything known)
+    local keyExists = isAdminKeyUsed or (VALID_KEYS_HWID_MAP[enteredKey] ~= nil)
+
+    if grantAccess then
+        accessGrantedFlag = true
+        soundEffects.success:Play() -- Play success sound
+        statusLabel.Text = "✓ Verification successful"
+        statusLabel.TextColor3 = Color3.fromRGB(100, 220, 100)
+
+        local successTitle = isAdminKeyUsed and "👑 Admin Access Granted" or "✅ Access Granted"
+        local successDescription = isAdminKeyUsed and "`" .. playerName .. "` verified using ADMIN key (`" .. enteredKey .. "`)." or "`" .. playerName .. "` verified using key `" .. enteredKey .. "`."
+        local statusFieldValue = isAdminKeyUsed and "Admin Access Granted" or "Access Granted"
+        local successColor = isAdminKeyUsed and 0xFFD700 or 0x57F287 -- Gold or Green
+
+        sendWebhook( successTitle, successDescription, successColor, { { name="👤 User",value=playerName,inline=true }, { name="💻 HWID",value=userHwid,inline=true }, { name="🔑 Entered Key",value="`"..enteredKey.."`",inline=false }, { name="🔑 Status",value=statusFieldValue,inline=false } } )
+
+        local pulse1 = TweenService:Create(verifyButton, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(100, 220, 130), Size = UDim2.new(1,-35,0,42) })
+        local pulse2 = TweenService:Create(verifyButton, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(70, 180, 100), Size = UDim2.new(1,-40,0,40) })
+        pulse1:Play(); pulse1.Completed:Connect(function() pulse2:Play() end)
+
+        task.delay(0.8, function()
+            local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Size = UDim2.new(0,0,0,0) })
+            closeTween:Play()
+            closeTween.Completed:Connect(function()
+                if screenGui then screenGui:Destroy() end
+                pcall(function() game.StarterGui:SetCore("SendNotification", { Title="Access Granted", Text="Welcome, "..playerName, Duration=5, Icon="rbxassetid://10030902360"}) end)
+                print("Loading scripts...")
+                task.spawn(function() local s,e=pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))() end) if not s then warn("staffdetector fail:",e) end end)
+                task.wait(2)
+                task.spawn(function() local s,e=pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))() end) if not s then warn("crimfarmnew fail:",e) end end)
+            end)
+        end)
+
+    -- Only show denial error if the key actually exists but HWID failed, OR if the key doesn't exist *at all* (preventing errors during typing)
+    -- For auto-check, we might want to avoid showing "Invalid Key" until the user stops typing or presses Enter/Verify.
+    -- Let's keep denial logic primarily for manual triggers (button/enter) unless specifically required on auto-check.
+    -- The current structure tries to grant access if possible; if not, it does nothing until manually triggered or fully typed invalid key.
+
+    -- Let's refine: If access is NOT granted, but the key *does* exist (meaning HWID mismatch), show error immediately.
+    elseif keyExists and not grantAccess then
+         -- This block runs if the key is recognized (either admin or regular) but access is still denied (must be HWID mismatch for a regular key)
+        soundEffects.error:Play() -- Play error sound only on definite mismatch
+        statusLabel.Text = "❌ " .. failureReason -- Display specific reason (HWID mismatch)
+        statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+
+        -- Send Failure Webhook for HWID mismatch
+        sendWebhook( "❌ Access Denied", "`"..playerName.."` failed verification.", 0xED4245, { { name="👤 User",value=playerName,inline=true }, { name="💻 HWID",value=userHwid,inline=true }, { name="🔑 Entered Key",value="`"..enteredKey.."`",inline=false }, { name="🔧 Reason",value=failureReason,inline=false }, { name="🔑 Status",value="Access Denied",inline=false } } )
+
+        pcall(function() game.StarterGui:SetCore("SendNotification", { Title="Access Denied", Text=failureReason..".", Duration=5, Icon="rbxassetid://86145153943378"}) end)
+
+        local errorColor1 = TweenService:Create(verifyButton, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(220,100,100) })
+        local errorColor2 = TweenService:Create(verifyButton, TweenInfo.new(0.3), { BackgroundColor3 = Color3.fromRGB(70,180,100) })
+        errorColor1:Play(); errorColor1.Completed:Connect(function() errorColor2:Play() end)
+
+        task.delay(2, function() if not accessGrantedFlag then statusLabel.Text = "" end end)
+    end
+
+    -- Note: If the key being typed is incomplete / doesn't match anything yet, neither grantAccess nor the 'keyExists and not grantAccess' block runs,
+    -- so no error is shown prematurely during typing. An explicit "Invalid Key" error will only show if triggered manually (button/enter) and the key isn't found.
+
 end
 
-soundEffects.success.SoundId = "rbxassetid://114326413874741" -- Dźwięk sukcesu
-soundEffects.error.SoundId = "rbxassetid://80099403859001" -- Dźwięk błędu
-soundEffects.click.SoundId = "rbxassetid://6895079853" -- Dźwięk kliknięcia
 
--- Flaga śledząca, czy klucz został zweryfikowany
-local keyVerified = false
+-- [[ Event Handlers ]] --
 
--- Funkcja weryfikacji klucza
-local function verifyKey()
-	soundEffects.click:Play()
-
-	local key = inputBox.Text:lower():gsub("%s+", "")
-	local playerName = Players.LocalPlayer.Name
-	local validKey = false
-
-	-- Sprawdź ogólne klucze
-	if VALID_KEYS[key] == true then
-		validKey = true
-		-- Sprawdź klucze specyficzne dla użytkownika
-	elseif type(VALID_KEYS[key]) == "table" then
-		for _, username in ipairs(VALID_KEYS[key].users or {}) do
-			if playerName == username then
-				validKey = true
-				break
-			end
-		end
-	end
-
-	if validKey and not keyVerified then
-		keyVerified = true
-		soundEffects.success:Play()
-		statusLabel.Text = "✓ Verification successful"
-		statusLabel.TextColor3 = Color3.fromRGB(100, 220, 100)
-
-		-- Animacja sukcesu (pulsowanie)
-		local pulse1 = TweenService:Create(verifyButton, TweenInfo.new(0.2), {
-			BackgroundColor3 = Color3.fromRGB(100, 220, 130),
-			Size = UDim2.new(1, -35, 0, 42)
-		})
-
-		local pulse2 = TweenService:Create(verifyButton, TweenInfo.new(0.2), {
-			BackgroundColor3 = Color3.fromRGB(70, 180, 100),
-			Size = UDim2.new(1, -40, 0, 40)
-		})
-
-		pulse1:Play()
-		pulse1.Completed:Connect(function()
-			pulse2:Play()
-		end)
-
-		-- Zamknięcie interfejsu po sukcesie
-		task.delay(0.8, function()
-			local closeTween = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-				Size = UDim2.new(0, 0, 0, 0)
-			})
-			closeTween:Play()
-
-			closeTween.Completed:Connect(function()
-				screenGui:Destroy()
-				game.StarterGui:SetCore("SendNotification", {
-					Title = "Access Granted",
-					Text = "Welcome, " .. playerName,
-					Duration = 5,
-					Icon = "rbxassetid://10030902360",
-				})
-				print("Script loading..")
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))()
-				wait(2)
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/crimfarmnew"))()
-			end)
-		end)
-	elseif not validKey then
-		game.StarterGui:SetCore("SendNotification", {
-			Title = "Access Denied",
-			Text = "Welcome, " .. playerName,
-			Duration = 5,
-			Icon = "rbxassetid://86145153943378",
-		})
-		soundEffects.error:Play()
-		statusLabel.Text = "❌ Invalid key"
-		statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
-
-		-- Animacja błędu (pulsowanie czerwone)
-		local errorColor1 = TweenService:Create(verifyButton, TweenInfo.new(0.1), {
-			BackgroundColor3 = Color3.fromRGB(220, 100, 100)
-		})
-
-		local errorColor2 = TweenService:Create(verifyButton, TweenInfo.new(0.3), {
-			BackgroundColor3 = Color3.fromRGB(70, 180, 100)
-		})
-
-		errorColor1:Play()
-		errorColor1.Completed:Connect(function()
-			errorColor2:Play()
-		end)
-
-		-- Reset po 2 sekundach
-		task.delay(2, function()
-			statusLabel.Text = ""
-		end)
-	end
-end
-
--- Obsługa zdarzeń
-verifyButton.MouseButton1Click:Connect(verifyKey)
-
-inputBox.FocusLost:Connect(function(enterPressed)
-	if enterPressed then
-		verifyKey()
-	end
-end)
-
--- Animacja otwarcia
-task.wait(0.5) -- Opóźnienie dla lepszego efektu
-
-local openTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {
-	Size = UDim2.new(0, 300, 0, 250)
-})
-openTween:Play()
-
--- Automatyczne sprawdzanie przy poprawnym kluczu
+-- Auto-verify when text changes if it matches a known key pattern
 inputBox:GetPropertyChangedSignal("Text"):Connect(function()
-	local key = inputBox.Text:lower():gsub("%s+", "")
-	if VALID_KEYS[key] and not keyVerified then
-		verifyKey()
-	end
+    if accessGrantedFlag then return end -- Don't check if already verified
+
+    local normalizedKey = inputBox.Text:lower():gsub("%s+", "")
+    -- Check if the currently typed text corresponds to a FULL key (admin or regular)
+    local isPotentiallyValidKey = (ADMIN_KEYS[normalizedKey] == true) or (VALID_KEYS_HWID_MAP[normalizedKey] ~= nil)
+
+    if isPotentiallyValidKey then
+        -- Attempt verification immediately if a known key is typed
+        verifyAccess()
+    end
 end)
 
--- Czyszczenie przy wyjściu gracza
-Players.PlayerRemoving:Connect(function(player)
-	if player == Players.LocalPlayer then
-		screenGui:Destroy()
-	end
+-- Manual verification via Button Click
+verifyButton.MouseButton1Click:Connect(function()
+     if accessGrantedFlag then return end
+     soundEffects.click:Play() -- Play click sound on manual trigger
+     verifyAccess() -- Run full check
+
+     -- If access is still not granted after manual check (e.g., key truly invalid)
+     task.wait(0.1) -- Short delay to allow verifyAccess to potentially grant access
+     if not accessGrantedFlag then
+         local enteredKey = inputBox.Text:lower():gsub("%s+", "")
+         local keyExists = (ADMIN_KEYS[enteredKey] == true) or (VALID_KEYS_HWID_MAP[enteredKey] ~= nil)
+         if not keyExists and enteredKey ~= "" then -- Only show "Invalid Key" if it doesn't exist and isn't empty
+            statusLabel.Text = "❌ Invalid Key"
+            statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+            -- Send webhook for truly invalid key attempt only on manual trigger
+            sendWebhook( "❌ Access Denied", "`"..playerName.."` failed verification.", 0xED4245, { { name="👤 User",value=playerName,inline=true }, { name="💻 HWID",value=userHwid,inline=true }, { name="🔑 Entered Key",value="`"..enteredKey.."`",inline=false }, { name="🔧 Reason",value="Invalid Key",inline=false }, { name="🔑 Status",value="Access Denied",inline=false } } )
+            task.delay(2, function() if not accessGrantedFlag then statusLabel.Text = "" end end)
+         end
+     end
 end)
+
+-- Manual verification via Enter Key
+inputBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+         if accessGrantedFlag then return end
+         soundEffects.click:Play() -- Play click sound on manual trigger
+         verifyAccess() -- Run full check
+
+         -- Similar logic to button click to handle truly invalid keys on Enter press
+         task.wait(0.1)
+         if not accessGrantedFlag then
+            local enteredKey = inputBox.Text:lower():gsub("%s+", "")
+            local keyExists = (ADMIN_KEYS[enteredKey] == true) or (VALID_KEYS_HWID_MAP[enteredKey] ~= nil)
+            if not keyExists and enteredKey ~= "" then
+                statusLabel.Text = "❌ Invalid Key"
+                statusLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+                sendWebhook( "❌ Access Denied", "`"..playerName.."` failed verification.", 0xED4245, { { name="👤 User",value=playerName,inline=true }, { name="💻 HWID",value=userHwid,inline=true }, { name="🔑 Entered Key",value="`"..enteredKey.."`",inline=false }, { name="🔧 Reason",value="Invalid Key",inline=false }, { name="🔑 Status",value="Access Denied",inline=false } } )
+                task.delay(2, function() if not accessGrantedFlag then statusLabel.Text = "" end end)
+            end
+         end
+    end
+end)
+
+
+-- [[ Opening Animation ]] --
+task.wait(0.5); local openTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Size = UDim2.new(0,300,0,250) }); openTween:Play()
+
+-- [[ Cleanup on Player Leaving ]] --
+Players.PlayerRemoving:Connect(function(player) if player == localPlayer then if screenGui then screenGui:Destroy() end end end)
+
+print("Key & HWID Verification System (Auto-Check Enabled) Loaded.")
