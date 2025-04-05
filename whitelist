@@ -27,8 +27,8 @@ local VALID_KEYS_HWID_MAP = {
     ["scnitselpersonal"] = {
         ["4EFBA807-97C6-4B4D-8CBE-6F95BB694A5B"] = true, -- Example: Replace with actual HWID
     },
-    ["anotherkey123"] = {
-        ["HWID_ALLOWED_FOR_KEY2"] = true    -- Example: Replace with actual HWID
+    ["elimdedegilkeys1234"] = {
+        ["83055AED-3BA7-47D4-AA82-BFCE28731A18"] = true    -- Example: Replace with actual HWID
     },
 }
 -- ======================================================================= --
