@@ -779,6 +779,79 @@
                     end
                 end
             end)
+            --======================= INF STAMINA =========================--
+            -- Sprawdź, czy UserInputService jest dostępny
+            local UserInputService = game:GetService("UserInputService")
+            if not UserInputService then
+                warn("Nie można uzyskać dostępu do UserInputService!")
+                return -- Zakończ skrypt, jeśli nie ma dostępu do usługi wejścia
+            end
+
+            -- Zmienna do przechowywania stanu nieskończonej staminy (domyślnie wyłączone)
+            local isInfiniteStaminaEnabled = false
+
+            -- Zmienna do przechowywania oryginalnej funkcji staminy
+            local oldStaminaFunction
+
+            -- Spróbuj znaleźć funkcję docelową (zakładając, że ścieżka jest poprawna)
+            local targetFunction
+            local success, result = pcall(function()
+                -- Użyj pcall, aby bezpiecznie uzyskać dostęp do potencjalnie nieistniejących elementów
+                local env = getrenv and getrenv() or getfenv and getfenv() -- Spróbuj różnych metod uzyskania środowiska
+                if env and env._G and env._G.S_Take then
+                    targetFunction = getupvalue(env._G.S_Take, 2)
+                end
+            end)
+
+            if not success then
+                warn("Wystąpił błąd podczas próby uzyskania dostępu do _G.S_Take:", result)
+            elseif not targetFunction then
+                warn("Nie można znaleźć funkcji docelowej do zahaczenia staminy (getupvalue zwrócił nil lub _G.S_Take nie istnieje).")
+            else
+                -- Zahacz funkcję, jeśli została znaleziona
+                -- hookfunction może różnić się w zależności od używanego exploita
+                local hookSuccess, hookResult = pcall(function()
+                    oldStaminaFunction = hookfunction(
+                        targetFunction,
+                        function(v1, ...) -- Nowa funkcja zastępująca oryginalną
+                            local args = {...} -- Zbieranie pozostałych argumentów
+                            if isInfiniteStaminaEnabled then
+                                -- Jeśli nieskończona stamina jest WŁĄCZONA, zmień ilość zabieranej staminy na 0
+                                -- Wywołaj oryginalną funkcję z v1 = 0 i resztą argumentów
+                                return oldStaminaFunction(0, unpack(args))
+                            else
+                                -- Jeśli nieskończona stamina jest WYŁĄCZONA, wywołaj oryginalną funkcję bez zmian
+                                return oldStaminaFunction(v1, unpack(args))
+                            end
+                        end
+                    )
+                end)
+
+                if not hookSuccess then
+                    oldStaminaFunction = nil -- Upewnij się, że nie próbujemy użyć nieudanej funkcji hooka
+                end
+            end
+
+            -- Uwaga: Ten skrypt zakłada, że funkcje takie jak getrenv, getupvalue i hookfunction są dostępne
+            -- w środowisku, w którym jest uruchamiany (typowym dla exploitów Roblox).
+            -- Działanie może zależeć od konkretnego exploita i aktualizacji gry Roblox.
+
+            -- Funkcje do włączania i wyłączania nieskończonej staminy
+            local function InfiniteStamina_Enable()
+                if not oldStaminaFunction then
+                    warn("Funkcja staminy nie została zahaczona. Infinite Stamina nie działa.")
+                    return
+                end
+                isInfiniteStaminaEnabled = true
+            end
+
+            local function InfiniteStamina_Disable()
+                if not oldStaminaFunction then
+                    warn("Funkcja staminy nie została zahaczona. Infinite Stamina nie działa.")
+                    return
+                end
+                isInfiniteStaminaEnabled = false
+            end
 			--======================= INVISIBILITY =========================--
 			repeat task.wait() until game:IsLoaded();
 
@@ -1540,7 +1613,7 @@
 				local ssBind = nil
 				createToggleRow(
 					contentFrame,
-					" Save Sewers",
+					" Safe Sewers",
 					true,
 					function() return SaveSewers_Enabled end,
 					SaveSewers_Enable,
@@ -1549,6 +1622,19 @@
 					function(k) ssBind = k end
 				)
 			end
+            do
+                local infiniteStaminaBind = nil
+                createToggleRow(
+                    contentFrame,
+                    " Infinite Stamina",
+                    true,
+                    function() return isInfiniteStaminaEnabled end,
+                    InfiniteStamina_Enable,
+                    InfiniteStamina_Disable,
+                    function() return infiniteStaminaBind end,
+                    function(k) infiniteStaminaBind = k end
+                )
+            end
             -- 7) NoRecoil
 			do
 				local nrBind = nil
