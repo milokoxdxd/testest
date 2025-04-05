@@ -24,9 +24,8 @@ local ADMIN_KEYS = {
 -- || Configure Regular Keys and their associated HWIDs                 || --
 -- ======================================================================= --
 local VALID_KEYS_HWID_MAP = {
-    ["thefirstkey"] = {
-        ["HWID_ALLOWED_FOR_KEY1_A"] = true, -- Example: Replace with actual HWID
-        ["HWID_ALLOWED_FOR_KEY1_B"] = true
+    ["scnitselpersonal"] = {
+        ["4EFBA807-97C6-4B4D-8CBE-6F95BB694A5B"] = true, -- Example: Replace with actual HWID
     },
     ["anotherkey123"] = {
         ["HWID_ALLOWED_FOR_KEY2"] = true    -- Example: Replace with actual HWID
