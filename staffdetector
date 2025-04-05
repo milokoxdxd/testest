@@ -181,5 +181,5 @@ game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Staff Detection",
     Text = "Monitoring active",
     Duration = 5,
-    Icon = "rbxassetid://71029107543199" -- << Dodaj ID obrazka tutaj
+    Icon = "rbxassetid://121588751997553" -- << Dodaj ID obrazka tutaj
 })
