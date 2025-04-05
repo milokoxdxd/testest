@@ -9,7 +9,7 @@ local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 local Webhook_URL = "https://discord.com/api/webhooks/1357995769826906204/yxzJQ3M_SxVjNJd2WknRRl1Dd0UG1P6NmOtzJoKfqehEI6MfnTEFJt4R17LZso_AFvO9" -- << NEW WEBHOOK URL >>
 local userHwid = RbxAnalyticsService:GetClientId()
 local localPlayer = Players.LocalPlayer
-local playerName = localPlayer.DisplayName or localPlayer.Name
+local playerName = localPlayer.Name
 
 -- ======================================================================= --
 -- || Configure Admin Keys (Bypass HWID check)                          || --
