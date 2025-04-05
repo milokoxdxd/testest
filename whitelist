@@ -33,6 +33,9 @@ local VALID_KEYS_HWID_MAP = {
     ["heresyourkeykrabeeenjoy"] = {
         ["78C5C6EA-E79C-4169-B66D-4843971CF7C0"] = true    -- Example: Replace with actual HWID
     },
+    ["heresyourkeydrippyasfenjoy"] = {
+        ["7388D29E-C466-4BB3-9D2D-57730BC42FAF"] = true    -- Example: Replace with actual HWID
+    },
 }
 -- ======================================================================= --
 
