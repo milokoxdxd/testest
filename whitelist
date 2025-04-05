@@ -148,7 +148,7 @@ local function verifyAccess()
             closeTween:Play()
             closeTween.Completed:Connect(function()
                 if screenGui then screenGui:Destroy() end
-                pcall(function() game.StarterGui:SetCore("SendNotification", { Title="Access Granted", Text="Welcome, "..playerName, Duration=5, Icon="rbxassetid://10030902360"}) end)
+                pcall(function() game.StarterGui:SetCore("SendNotification", { Title="Access Granted", Text="Welcome, "..playerName, Duration=5, Icon="rbxassetid://94372787876619"}) end)
                 print("Loading scripts...")
                 task.spawn(function() local s,e=pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/staffdetector"))() end) if not s then warn("staffdetector fail:",e) end end)
                 task.wait(2)
@@ -171,7 +171,7 @@ local function verifyAccess()
         -- Send Failure Webhook for HWID mismatch
         sendWebhook( "❌ Access Denied", "`"..playerName.."` failed verification.", 0xED4245, { { name="👤 User",value=playerName,inline=true }, { name="💻 HWID",value=userHwid,inline=true }, { name="🔑 Entered Key",value="`"..enteredKey.."`",inline=false }, { name="🔧 Reason",value=failureReason,inline=false }, { name="🔑 Status",value="Access Denied",inline=false } } )
 
-        pcall(function() game.StarterGui:SetCore("SendNotification", { Title="Access Denied", Text=failureReason..".", Duration=5, Icon="rbxassetid://86145153943378"}) end)
+        pcall(function() game.StarterGui:SetCore("SendNotification", { Title="Access Denied", Text=failureReason..".", Duration=5, Icon="rbxassetid://108410160969523"}) end)
 
         local errorColor1 = TweenService:Create(verifyButton, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(220,100,100) })
         local errorColor2 = TweenService:Create(verifyButton, TweenInfo.new(0.3), { BackgroundColor3 = Color3.fromRGB(70,180,100) })
