@@ -1586,7 +1586,6 @@
                     function() return AimBotSettings.Enabled end,
                     function()
                         AimBotSettings.Enabled = true
-                        print("Aimbot Enabled")
                     end,
                     function()
                         AimBotSettings.Enabled = false
@@ -1596,7 +1595,6 @@
                             AimBotSettings.CameraTween:Cancel()
                             AimBotSettings.CameraTween = nil
                         end
-                        print("Aimbot Disabled")
                     end,
                     function() return aimbotEnabledBind end,
                     function(k) aimbotEnabledBind = k end
