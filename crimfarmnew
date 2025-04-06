@@ -1085,6 +1085,48 @@
 					SaveSewers_Connection = nil
 				end
 			end           
+            -- 3) Save Vibecheck
+			local SaveVibe_Enabled = false
+			local SaveVibe_Connection
+			local SaveVibe_Position = Vector3.new(-4805, -201, -855)
+
+			local function SaveVibe_Enable()
+				if SaveVibe_Enabled then return end
+				SaveVibe_Enabled = true
+				local killpart = game.Workspace.Filter.Parts:FindFirstChild("Kill_Brick")
+				if killpart then
+					killpart:Destroy()
+				end
+
+				SaveVibe_Connection = RunService.RenderStepped:Connect(function()
+					if not SaveVibe_Enabled then return end
+					local char = LocalPlayer.Character
+					if char then
+						local hrp = char:FindFirstChild("HumanoidRootPart")
+						local hum = char:FindFirstChildOfClass("Humanoid")
+						if hrp then
+							hrp.CFrame = CFrame.new(SaveVibe_Position)
+						end
+						local tool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+						if tool and tool.Parent ~= char then
+							wait(1)
+							tool.Parent = char
+						end
+						if hum and hum.Health <= 0 then
+							event:InvokeServer("KMG4R904") -- авто возрождение
+						end
+					end
+				end)
+			end
+
+			local function SaveVibe_Disable()
+				if not SaveVibe_Enabled then return end
+				SaveVibe_Enabled = false
+				if SaveVibe_Connection then
+					SaveVibe_Connection:Disconnect()
+					SaveVibe_Connection = nil
+				end
+			end       
 
             -- NoRecoil Function
             local NoRecoil_Enabled = false
@@ -1599,7 +1641,7 @@
 			--	local scBind = nil
 			--	createToggleRow(
 			--		contentFrame,
-			--		" Save EQR PLACE",
+			--		" LAVA TP",
 			--		true,
 			--		function() return SaveCube_Enabled end,
 			--		SaveCube_Enable,
@@ -1613,13 +1655,27 @@
 				local ssBind = nil
 				createToggleRow(
 					contentFrame,
-					" Safe Sewers",
+					" Safe Sewers TP",
 					true,
 					function() return SaveSewers_Enabled end,
 					SaveSewers_Enable,
 					SaveSewers_Disable,
 					function() return ssBind end,
 					function(k) ssBind = k end
+				)
+			end
+            -- 6) Save Vibe
+			do
+				local svBind = nil
+				createToggleRow(
+					contentFrame,
+					" Safe Vibecheck TP",
+					true,
+					function() return SaveVibe_Enabled end,
+					SaveVibe_Enable,
+					SaveVibe_Disable,
+					function() return svBind end,
+					function(k) svBind = k end
 				)
 			end
             do
