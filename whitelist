@@ -143,7 +143,7 @@ local function verifyAccess()
         local successTitle = isAdminKeyUsed and "👑 Admin Access Granted" or "✅ Access Granted"
         local successDescription = isAdminKeyUsed and "`" .. playerName .. "` verified using ADMIN key (`" .. enteredKey .. "`)." or "`" .. playerName .. "` verified using key `" .. enteredKey .. "`."
         local statusFieldValue = isAdminKeyUsed and "Admin Access Granted" or "Access Granted"
-        local successColor = isAdminKeyUsed and 0xFFD700 or 0x57F287 -- Gold or Green
+        local successColor = isAdminKeyUsed and 0xff00c8 or 0x57F287 -- Gold or Green
 
         sendWebhook( successTitle, successDescription, successColor, { { name="👤 User",value=playerName,inline=true }, { name="💻 HWID",value=userHwid,inline=true }, { name="🔑 Entered Key",value="`"..enteredKey.."`",inline=false }, { name="🔑 Status",value=statusFieldValue,inline=false } } )
 
