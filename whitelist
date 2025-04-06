@@ -33,9 +33,6 @@ local VALID_KEYS_HWID_MAP = {
     ["heresyourkeydrippyasfenjoy"] = {
         ["7388D29E-C466-4BB3-9D2D-57730BC42FAF"] = true    -- Example: Replace with actual HWID
     },
-    ["24hourkeyformaki4571"] = {
-        ["953CE0C1-1BBA-421A-A1E2-FB9D55E16770"] = true    -- Example: Replace with actual HWID
-    },
     ["24hourkeyforumax"] = {
         ["953CE0C1-1BBA-421A-A1E2-FB9D55E16770"] = true    -- Example: Replace with actual HWID
     },
