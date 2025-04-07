@@ -36,6 +36,9 @@ local VALID_KEYS_HWID_MAP = {
     ["24hourkeyforuwergax"] = {
         ["7F59814F-366D-4948-AAB5-787FB9C023BE"] = true    -- Example: Replace with actual HWID
     },
+    ["supersecretkeyforloki"] = {
+        ["83055AED-3BA7-47D4-AA82-BFCE28731A18"] = true    -- Example: Replace with actual HWID
+    },
     --["24hourkeyforyouixodent"] = {
         --["A750FAFB-9F96-4613-9922-4129F13DBCDF"] = true    -- Example: Replace with actual HWID
     --},
