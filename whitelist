@@ -24,17 +24,8 @@ local ADMIN_KEYS = {
 -- || Configure Regular Keys and their associated HWIDs                   || --
 -- ======================================================================= --
 local VALID_KEYS_HWID_MAP = {
-    ["scnitselpersonal"] = {
-        ["4EFBA807-97C6-4B4D-8CBE-6F95BB694A5B"] = true, -- Example: Replace with actual HWID
-    },
     ["heresyourkeykrabeeenjoy"] = {
         ["78C5C6EA-E79C-4169-B66D-4843971CF7C0"] = true    -- Example: Replace with actual HWID
-    },
-    ["24hourkeyforumax"] = {
-        ["953CE0C1-1BBA-421A-A1E2-FB9D55E16770"] = true    -- Example: Replace with actual HWID
-    },
-    ["24hourkeyforuwergax"] = {
-        ["7F59814F-366D-4948-AAB5-787FB9C023BE"] = true    -- Example: Replace with actual HWID
     },
     ["supersecretkeyforloki"] = {
         ["83055AED-3BA7-47D4-AA82-BFCE28731A18"] = true    -- Example: Replace with actual HWID
