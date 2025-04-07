@@ -1,1 +1,2022 @@
+--[[ Original Anti-Idle & Services ]]--
 
+wait(0.5)
+local VirtualUser = game:GetService('VirtualUser')
+
+if game:GetService('Players').LocalPlayer then
+    game:GetService('Players').LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+end
+
+
+--[[ Services ]]--
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService") -- Potrzebny do animacji UI
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+
+--[[ Destroy Existing UI ]]--
+
+-- Usuwamy stare wersje GUI, aby uniknąć konfliktów
+local oldGui = PlayerGui:FindFirstChild("VenomHubScreenGui")
+if oldGui then
+    oldGui:Destroy()
+end
+
+local oldCategorizedGui = PlayerGui:FindFirstChild("VenomHubScreenGui_Categorized")
+if oldCategorizedGui then
+    oldCategorizedGui:Destroy()
+end
+
+local oldKeyGui = PlayerGui:FindFirstChild("KeyVerificationUI")
+if oldKeyGui then
+    oldKeyGui:Destroy()
+end
+
+
+-------------------------------------------------------------------------------
+--  1. Tworzenie Głównego UI (Czytelne, Wieloliniowe)
+-------------------------------------------------------------------------------
+
+-- Główny kontener GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VenomHubScreenGui_Categorized"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = PlayerGui
+
+-- Ramka główna
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "VenomHubMainFrame"
+mainFrame.Size = UDim2.new(0, 450, 0, 350) -- Dostosowany rozmiar
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20) -- Ciemne tło jak w drugim skrypcie
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Visible = true
+mainFrame.Active = true
+mainFrame.Draggable = false -- Wyłączymy standardowe przeciąganie, bo mamy własne
+mainFrame.Parent = screenGui
+
+-- Zaokrąglenie rogów ramki głównej
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+-- Obramowanie ramki głównej
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(60, 60, 75) -- Obramowanie jak w drugim skrypcie
+stroke.Thickness = 1
+stroke.Transparency = 0.5
+stroke.Parent = mainFrame
+
+-- Tytuł
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, -40, 0, 40) -- Dostosowany rozmiar tytułu
+titleLabel.Position = UDim2.new(0, 20, 0, 5) -- Trochę niżej
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "EQR Hub"
+titleLabel.Font = Enum.Font.GothamSemibold -- Font jak w drugim skrypcie
+titleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+titleLabel.TextSize = 20 -- Rozmiar fontu
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = mainFrame
+
+-- Linia pod tytułem
+local line = Instance.new("Frame")
+line.Name = "Divider"
+line.Size = UDim2.new(1, -40, 0, 1)
+line.Position = UDim2.new(0, 20, 0, 40) -- Pod tytułem
+line.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+line.BorderSizePixel = 0
+line.Parent = mainFrame
+
+-- Podpis (Footer)
+local footerLabel = Instance.new("TextLabel")
+footerLabel.Name = "Footer"
+footerLabel.Size = UDim2.new(1, -20, 0, 20) -- Rozmiar i pozycja stopki
+footerLabel.Position = UDim2.new(0, 10, 1, -25)
+footerLabel.BackgroundTransparency = 1
+footerLabel.Text = "By helloitsme#4243 | Press K to Toggle" -- Dodano info o K
+footerLabel.Font = Enum.Font.Gotham -- Font jak w drugim skrypcie
+footerLabel.TextSize = 10
+footerLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
+footerLabel.TextXAlignment = Enum.TextXAlignment.Right
+footerLabel.Parent = mainFrame
+
+-- Sidebar na kategorie
+local sidebarFrame = Instance.new("Frame")
+sidebarFrame.Name = "SidebarFrame"
+sidebarFrame.Size = UDim2.new(0, 120, 1, -70) -- Szerokość paska bocznego, wysokość dopasowana
+sidebarFrame.Position = UDim2.new(0, 10, 0, 50) -- Pozycja pod linią, z lewej
+sidebarFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25) -- Nieco inny odcień tła
+sidebarFrame.BorderSizePixel = 0
+sidebarFrame.Parent = mainFrame
+
+local sidebarCorner = Instance.new("UICorner")
+sidebarCorner.CornerRadius = UDim.new(0, 8)
+sidebarCorner.Parent = sidebarFrame
+
+local sidebarLayout = Instance.new("UIListLayout")
+sidebarLayout.Padding = UDim.new(0, 5)
+sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sidebarLayout.Parent = sidebarFrame
+
+-- Główny kontener na przyciski (z prawej strony)
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(1, -150, 1, -70) -- Szerokość (całość - sidebar - marginesy), wysokość
+contentFrame.Position = UDim2.new(0, 140, 0, 50) -- Pozycja obok sidebara
+contentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25) -- Taki sam jak sidebar dla spójności
+contentFrame.BorderSizePixel = 0
+contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+contentFrame.ScrollBarThickness = 6
+contentFrame.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 75)
+contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Początkowo zero, dynamicznie zmieniane
+contentFrame.Parent = mainFrame
+
+local contentCorner = Instance.new("UICorner")
+contentCorner.CornerRadius = UDim.new(0, 8)
+contentCorner.Parent = contentFrame
+
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Padding = UDim.new(0, 8)
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+contentLayout.Parent = contentFrame
+
+
+-------------------------------------------------------------------------------
+--  2. Перетаскивание окна (mainFrame) при удержании ЛКМ (Oryginalny komentarz)
+--     (Przeciąganie okna - Wersja z ograniczeniem do górnej belki)
+-------------------------------------------------------------------------------
+do
+    local dragging = false
+    local dragInput = nil
+    local dragStart = nil
+    local startPos = nil
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        local newX = startPos.X.Offset + delta.X
+        local newY = startPos.Y.Offset + delta.Y
+        mainFrame.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
+    end
+
+    mainFrame.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            local absPos = mainFrame.AbsolutePosition
+            local absSize = mainFrame.AbsoluteSize
+            local headerHeight = 45 -- Wysokość obszaru przeciągania (belka tytułowa)
+
+            -- Sprawdź, czy kliknięcie jest w obszarze nagłówka
+            if input.Position.Y < absPos.Y + headerHeight and input.Position.Y > absPos.Y and input.Position.X > absPos.X and input.Position.X < absPos.X + absSize.X then
+                dragging = true
+                dragStart = input.Position
+                startPos = mainFrame.Position
+
+                -- Śledź zmianę stanu inputu (puszczenie przycisku)
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end
+    end)
+
+    mainFrame.InputChanged:Connect(function(input)
+        -- Aktualizuj referencję do inputu, jeśli to ruch myszki lub dotyk
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        -- Jeśli przeciągamy i zarejestrowany input się zmienił, zaktualizuj pozycję
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+
+-------------------------------------------------------------------------------
+--  3. Клавиша [K] для показа/скрытия (Oryginalny komentarz)
+--     (Klawisz [K] do Pokazania/Ukrycia)
+-------------------------------------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    -- Jeśli gra nie przechwyciła inputu (np. pisanie na czacie)
+    if not gameProcessedEvent then
+        -- I jeśli wciśnięto klawisz K
+        if input.KeyCode == Enum.KeyCode.K then
+            -- Przełącz widoczność głównego okna
+            mainFrame.Visible = not mainFrame.Visible
+        end
+    end
+end)
+
+
+-------------------------------------------------------------------------------
+--  4. Объявляем все переменные и функции скриптов (Oryginalny komentarz)
+--     ORYGINALNA LOGIKA FUNKCJI SKRYPTÓW (Formatowanie Wieloliniowe)
+-------------------------------------------------------------------------------
+
+--============================ Fly ============================--
+local Fly_Enabled = false
+local Fly_Bind = nil
+local Fly_Connection
+local Fly_Speed = 50
+
+local function Fly_Enable()
+    if Fly_Enabled then
+        return
+    end
+    Fly_Enabled = true
+
+    Fly_Connection = RunService.RenderStepped:Connect(function(dt)
+        if not Fly_Enabled then
+            return
+        end
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local cam = workspace.CurrentCamera
+            local moveDir = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveDir = moveDir + cam.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveDir = moveDir - cam.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveDir = moveDir - cam.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveDir = moveDir + cam.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                moveDir = moveDir + Vector3.new(0,1,0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                moveDir = moveDir - Vector3.new(0,1,0)
+            end
+
+            if moveDir.Magnitude > 0 then
+                hrp.CFrame = hrp.CFrame + (moveDir.Unit * Fly_Speed * dt)
+            end
+        end
+    end)
+end
+
+local function Fly_Disable()
+    if not Fly_Enabled then
+        return
+    end
+    Fly_Enabled = false
+    if Fly_Connection then
+        Fly_Connection:Disconnect()
+        Fly_Connection = nil
+    end
+end
+
+
+--========================== Admin Check (Nowy - z Twojego kodu) ========================--
+local AdminCheck_Enabled = false -- Domyślnie wyłączony
+local AdminCheck_Connection = nil
+
+-- Usługi (zakładamy, że Players, ReplicatedStorage, LocalPlayer są już zdefiniowane globalnie)
+-- Jeśli nie, odkomentuj poniższe lub dostosuj:
+-- local Players = game:GetService("Players")
+-- local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- local Player = Players.LocalPlayer -- Użyj globalnego LocalPlayer jeśli istnieje
+
+-- --- Konfiguracja Staff ---
+local staffPlayers = {
+    groups = {
+        [4165692] = { -- crimcorp
+            ["Tester"] = true, ["Contributor"] = true, ["Tester+"] = true, ["Developer"] = true,
+            ["Developer+"] = true, ["Community Manager"] = true, ["Manager"] = true, ["Owner"] = true
+        },
+        [32406137] = { -- staff thing
+            ["Junior"] = true, ["Moderator"] = true, ["Senior"] = true, ["Administrator"] = true,
+            ["Manager"] = true, ["Holder"] = true
+        },
+        [8024440] = { -- r3shape fanclub
+            ["zzzz"] = true, ["reshape enjoyer"] = true, ["i heart reshape"] = true, ["reshape superfan"] = true
+        },
+        [14927228] = { -- War Room
+            ["♞"] = true
+        }
+        -- Pamiętaj, aby poprawnie zamknąć tabelę groups, jeśli dodajesz więcej
+    }, -- Zamknięcie groups
+    users = { -- Lista UserID
+         3294804378, 93676120, 54087314, 81275825, 140837601, 1229486091, 46567801, 418086275, 29706395,
+         3717066084, 1424338327, 5046662686, 5046661126, 5046659439, 418199326, 1024216621, 1810535041,
+         63238912, 111250044, 63315426, 730176906, 141193516, 194512073, 193945439, 412741116, 195538733,
+         102045519, 955294, 957835150, 25689921, 366613818, 281593651, 455275714, 208929505, 96783330,
+         156152502, 93281166, 959606619, 142821118, 632886139, 175931803, 122209625, 278097946, 142989311,
+         1517131734, 446849296, 87189764, 67180844, 9212846, 47352513, 48058122, 155413858, 10497435,
+         513615792, 55893752, 55476024, 151691292, 136584758, 16983447, 3111449, 94693025, 271400893,
+         5005262660, 295331237, 64489098, 244844600, 114332275, 25048901, 69262878, 50801509, 92504899,
+         42066711, 50585425, 31365111, 166406495, 2457253857, 29761878, 21831137, 948293345, 439942262,
+         38578487, 1163048, 7713309208, 3659305297, 15598614, 34616594, 626833004, 198610386, 153835477,
+         3923114296, 3937697838, 102146039, 119861460, 371665775, 1206543842, 93428604, 1863173316, 90814576,
+         374665997, 423005063, 140172831, 42662179, 9066859, 438805620, 14855669, 727189337, 1871290386,
+         608073286
+         -- Pamiętaj, aby poprawnie zamknąć tabelę users, jeśli dodajesz więcej
+    } -- Zamknięcie users
+} -- Zamknięcie staffPlayers
+-- --- Koniec Konfiguracji Staff ---
+
+-- Funkcje pomocnicze z Twojego kodu
+local function hasTracker(player)
+    if not player or not player:IsA("Player") then return false, nil end
+    -- Bezpieczniejsze iterowanie po dzieciach
+    local children = player:GetChildren()
+    for i = 1, #children do
+        local child = children[i]
+        -- Sprawdź, czy nazwa jest stringiem i czy zawiera "Tracker" na końcu
+        if typeof(child.Name) == "string" and string.sub(child.Name, -8) == "Tracker$" then
+            local trackedPlayerName = string.sub(child.Name, 1, -9) -- Usuń "Tracker$"
+             if Players:FindFirstChild(trackedPlayerName) then
+                return true, trackedPlayerName
+            end
+        end
+    end
+    return false, nil
+end
+
+local function isStaff(player)
+    if not player or not player:IsA("Player") then return false end
+
+    -- Sprawdzanie grup
+    if staffPlayers.groups then
+        for groupID, roles in pairs(staffPlayers.groups) do
+            -- Bezpieczne wywołanie GetRankInGroup
+            local successRank, rank = pcall(function() return player:GetRankInGroup(groupID) end)
+            if successRank and rank and rank > 0 then
+                -- Bezpieczne wywołanie GetRoleInGroup
+                local successRole, roleName = pcall(function() return player:GetRoleInGroup(groupID) end)
+                if successRole and roleName and roles[roleName] then
+                    return true, roleName, groupID
+                end
+            end
+        end
+    end
+
+    -- Sprawdzanie UserID
+    if staffPlayers.users then
+        for i = 1, #staffPlayers.users do
+            if player.UserId == staffPlayers.users[i] then
+                return true, "UserID", player.UserId -- Zwróć UserID jako groupID dla spójności
+            end
+        end
+    end
+
+    return false
+end
+
+local function kickformat(staffInfo)
+    if not staffInfo or not staffInfo.Staff then return "Staff detected." end -- Domyślna wiadomość
+    local message = "Staff detected:\n"
+    for i, staff in ipairs(staffInfo.Staff) do
+        local idType = "Role"
+        local idValue = staff.Role or "Unknown"
+        if staff.Role == "UserID" then
+            idType = "UserID"
+            idValue = staff.GroupId or "Unknown" -- W funkcji isStaff, UserID jest teraz w GroupId
+        elseif staff.Role == "Tracker User" then
+             idType = "Tracker"
+             idValue = "Active"
+        end
+
+        message = message .. string.format(
+            "- %s (%s: %s)%s",
+            staff.Name or "Unknown",
+            idType,
+            idValue,
+            staff.TrackedPlayer and " - Tracking: " .. staff.TrackedPlayer or ""
+        )
+        if i < #staffInfo.Staff then
+            message = message .. "\n"
+        end
+    end
+    return message
+end
+
+local function kickWithStaffInfo(staffInfo)
+    local kickMsg = kickformat(staffInfo)
+    -- Użyj globalnego LocalPlayer zamiast lokalnego 'Player' z Twojego kodu
+    if LocalPlayer then
+        LocalPlayer:Kick("Staff joined\n\n" .. kickMsg)
+    else
+        warn("AdminCheck: LocalPlayer not found!")
+    end
+end
+
+local function checkCurrentStaff()
+    local staffFound = {}
+    local currentPlayers = Players:GetPlayers()
+    for i = 1, #currentPlayers do
+        local player = currentPlayers[i]
+        if player ~= LocalPlayer then -- Nie sprawdzaj siebie
+            local isPlayerStaff, role, groupID = isStaff(player)
+            local hasTrackers, trackedPlayer = hasTracker(player)
+
+            if isPlayerStaff or hasTrackers then
+                table.insert(staffFound, {
+                    Name = player.Name,
+                    Role = hasTrackers and "Tracker User" or role,
+                    GroupId = groupID,
+                    TrackedPlayer = trackedPlayer
+                })
+            end
+        end
+    end
+
+    if #staffFound > 0 then
+        kickWithStaffInfo({Staff = staffFound})
+        return true -- Znaleziono staff
+    end
+    return false -- Nie znaleziono staffu
+end
+
+-- Zmieniona nazwa funkcji i dodane sprawdzenie flagi
+local function onPlayerJoining(player)
+     if not AdminCheck_Enabled then return end -- Sprawdź czy funkcja jest włączona
+
+     local isPlayerStaff, role, groupID = isStaff(player)
+     local hasTrackers, trackedPlayer = hasTracker(player)
+
+     if isPlayerStaff or hasTrackers then
+         local staffInfo = {
+             Staff = {{
+                 Name = player.Name,
+                 Role = hasTrackers and "Tracker User" or role,
+                 GroupId = groupID,
+                 TrackedPlayer = trackedPlayer
+             }}
+         }
+         kickWithStaffInfo(staffInfo)
+     end
+end
+
+-- --- Funkcje Enable/Disable dla UI ---
+local function AdminCheck_Enable()
+    if AdminCheck_Enabled then return end
+    AdminCheck_Enabled = true -- Natychmiast ustaw flagę na true
+
+    -- === Aktualizacja UI powinna nastąpić tutaj ===
+    -- Zakładając, że Twoja funkcja createToggleRowFrame aktualizuje przycisk
+    -- po zmianie flagi AdminCheck_Enabled (np. przez kliknięcie),
+    -- przycisk powinien od razu pokazać stan "ON".
+    -- Jeśli nie, musiałbyś dodać tutaj kod ręcznie aktualizujący przycisk.
+
+    print("Admin Check (Your Version) Enabling...")
+
+    -- Rozłącz stare połączenie jeśli istnieje
+    if AdminCheck_Connection then AdminCheck_Connection:Disconnect() end
+
+    -- Podłącz listener PlayerAdded (to jest szybkie)
+    AdminCheck_Connection = Players.PlayerAdded:Connect(onPlayerJoining)
+    print("Admin Check (Your Version) Monitoring started.")
+
+    -- Wyślij powiadomienie (to też jest szybkie)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Staff Detection", Text = "Monitoring active", Duration = 5,
+            Icon = "rbxassetid://121588751997553" -- << ID Obrazka
+        })
+    end)
+
+    -- === Uruchom sprawdzanie obecnych graczy W TLE ===
+    task.spawn(function()
+        print("Admin Check: Running initial check on current players in background...")
+        local foundStaff = checkCurrentStaff() -- Ta funkcja może zająć chwilę
+
+        if foundStaff then
+            -- Jeśli znaleziono staff, gracz został już wyrzucony przez checkCurrentStaff().
+            -- Funkcja checkCurrentStaff sama w sobie wywołuje kick.
+            -- Możemy opcjonalnie zaktualizować stan z powrotem, chociaż gracz jest już wyrzucany.
+            AdminCheck_Enabled = false
+            warn("Admin Check: Staff found by background check. Kicked.")
+            -- Można by tu dodać aktualizację przycisku UI z powrotem na OFF, ale to bezcelowe przy kicku.
+            if AdminCheck_Connection then -- Rozłącz listener, bo nie jest już potrzebny
+                 AdminCheck_Connection:Disconnect()
+                 AdminCheck_Connection = nil
+            end
+        else
+             print("Admin Check: Initial background check complete, no staff found.")
+        end
+    end)
+    -- Funkcja AdminCheck_Enable kończy się tutaj natychmiast, nie czekając na checkCurrentStaff.
+end
+
+local function AdminCheck_Disable()
+    if not AdminCheck_Enabled then return end
+    AdminCheck_Enabled = false
+
+    if AdminCheck_Connection then
+        AdminCheck_Connection:Disconnect()
+        AdminCheck_Connection = nil
+    end
+    print("Admin Check (Your Version) Disabled.")
+end
+
+-- Opcjonalne uruchomienie domyślne (jeśli chcesz, aby startował włączony)
+-- if true then -- Zmień na true, jeśli ma być domyślnie włączony
+--    AdminCheck_Enable()
+-- end
+
+
+-- AntiAFK - teraz z możliwością bindowania stanu przycisku
+local AntiAFK_Enabled_Dummy = false
+local AntiAFK_Bind = nil -- Dodajemy zmienną na bind
+local function AntiAFK_Enable()
+    AntiAFK_Enabled_Dummy = true
+end
+local function AntiAFK_Disable()
+    AntiAFK_Enabled_Dummy = false
+end
+
+
+--=================== Melee Aura 4 Alt MAX! (Przywrócona Logika Oryginalna) =====================--
+local MeleeAura_Enabled = false
+local MeleeAura_Connection
+
+local runAttackLoop do
+    local plrs = game:GetService("Players")
+    local me = plrs.LocalPlayer
+    local run = game:GetService("RunService")
+
+    -- Bezpośredni dostęp do RemoteEvent/Function (jak w starym skrypcie - może generować błąd, jeśli nie istnieje!)
+    -- Upewnij się, że ścieżki są poprawne dla Twojej gry!
+    local remote1 = game:GetService("ReplicatedStorage"):FindFirstChild("Events", true) and game:GetService("ReplicatedStorage").Events:FindFirstChild("XMHH.2")
+    local remote2 = game:GetService("ReplicatedStorage"):FindFirstChild("Events", true) and game:GetService("ReplicatedStorage").Events:FindFirstChild("XMHH2.2")
+    -- Alternatywnie, jeśli wiesz na 100%, że istnieją:
+    -- local remote1 = game:GetService("ReplicatedStorage").Events["XMHH.2"]
+    -- local remote2 = game:GetService("ReplicatedStorage").Events["XMHH2.2"]
+
+    local maxdist = 20
+
+    local function Attack(target)
+        -- Sprawdzenie celu jak w oryginale
+        if not (target and target:FindFirstChild("Head")) then return end
+
+        -- Brak wczesnego sprawdzania narzędzia (jak w oryginale)
+        local char = me.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+        -- Sprawdzenie czy remotes istnieją - jeśli nie, oryginał by tu rzucił błąd, więc dodajemy ostrzeżenie
+        if not remote1 or not remote2 then
+             warn("MeleeAura Error: Cannot find required RemoteEvents/Functions (Events/XMHH.2 or Events/XMHH2.2).")
+             MeleeAura_Disable() -- Wyłącz, bo nie zadziała
+             return
+        end
+
+        -- Wywołanie InvokeServer bez pcall (jak w oryginale)
+        local arg1 = {
+            [1] = "🍞",
+            [2] = tick(),
+            [3] = tool, -- Oryginał przekazywał narzędzie
+            [4] = "43TRFWX",
+            [5] = "Normal",
+            [6] = tick(),
+            [7] = true
+        }
+        local result = remote1:InvokeServer(unpack(arg1)) -- Może rzucić błąd, jeśli InvokeServer zawiedzie
+
+        task.wait(0.1) -- Opóźnienie z oryginału
+
+        -- Sprawdzenie Handle i Head jak w oryginale
+        local Handle = tool and (tool:FindFirstChild("WeaponHandle") or tool:FindFirstChild("Handle")) or (char and char:FindFirstChild("Right Arm"))
+        local head = target:FindFirstChild("Head")
+
+        if Handle and head and hrp then -- Dodano sprawdzenie hrp dla pozycji
+            -- Wywołanie FireServer bez pcall (jak w oryginale)
+            local arg2 = {
+                [1] = "🍞",
+                [2] = tick(),
+                [3] = tool,
+                [4] = "2389ZFX34",
+                [5] = result,
+                [6] = false,
+                [7] = Handle,
+                [8] = head,
+                [9] = target,
+                [10] = hrp.Position, -- Użyj pozycji hrp
+                [11] = head.Position
+            }
+            remote2:FireServer(unpack(arg2)) -- Może rzucić błąd, jeśli FireServer zawiedzie
+        end
+    end
+
+    runAttackLoop = function()
+        return run.RenderStepped:Connect(function()
+            if not MeleeAura_Enabled then return end -- Sprawdź flagę
+            local char = me.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then -- Upewnij się, że gracz ma HRP
+                for _, plr in ipairs(plrs:GetPlayers()) do
+                    if plr ~= me then
+                        local c = plr.Character
+                        local hrp2 = c and c:FindFirstChild("HumanoidRootPart")
+                        local hum = c and c:FindFirstChildOfClass("Humanoid")
+                        -- Nie potrzebujemy sprawdzać głowy tutaj, bo Attack() to robi
+                        if hrp2 and hum then
+                            local dist = (hrp.Position - hrp2.Position).Magnitude
+                            -- Sprawdzenia z oryginału
+                            if dist < maxdist and hum.Health > 15 and not c:FindFirstChildOfClass("ForceField") then
+                                Attack(c)
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function MeleeAura_Enable()
+    if MeleeAura_Enabled then return end
+    MeleeAura_Enabled = true
+    -- Tworzenie połączenia jak w oryginale (bez sprawdzania czy istnieje)
+    -- Jeśli poprzednie połączenie nie zostało rozłączone, może powstać wyciek - ale tak działał oryginał
+    -- Lepsza praktyka to rozłączanie starego, ale trzymamy się oryginału
+    MeleeAura_Connection = runAttackLoop()
+end
+
+local function MeleeAura_Disable()
+    if not MeleeAura_Enabled then return end
+    MeleeAura_Enabled = false
+    if MeleeAura_Connection and MeleeAura_Connection.Connected then -- Rozłącz, jeśli istnieje i jest połączone
+        MeleeAura_Connection:Disconnect()
+        MeleeAura_Connection = nil
+    end
+end
+--======================= Teleport Farm =========================--
+local TPFarm_Enabled = false
+local TPFarm_TargetName = "Type ALT account name.."
+local TPFarm_SteppedConnection = nil
+local TPFarm_RenderConnection = nil
+local TPFarm_CharConnection = nil
+local DeathRespawn_Event = game:GetService("ReplicatedStorage")
+
+-- Локальная функция, вызываемая при спавне персонажа (CharacterAdded) (Oryginalny komentarz)
+local function TPFarm_OnCharacterAdded(char)
+    if TPFarm_SteppedConnection then
+        TPFarm_SteppedConnection:Disconnect()
+        TPFarm_SteppedConnection=nil
+    end
+    task.wait(0.4)
+    local hrp=char:FindFirstChild("HumanoidRootPart")
+    local hum=char:FindFirstChildOfClass("Humanoid")
+    if not (hrp and hum) then
+        return
+    end
+    TPFarm_SteppedConnection=RunService.Stepped:Connect(function()
+        if not TPFarm_Enabled then
+            return
+        end
+        local mainPlayer=Players:FindFirstChild(TPFarm_TargetName)
+        local mainChar=mainPlayer and mainPlayer.Character
+        local mainHRP=mainChar and mainChar:FindFirstChild("HumanoidRootPart")
+        if mainHRP then
+            hrp.CFrame=mainHRP.CFrame+(mainHRP.CFrame.LookVector*3)
+            -- Oryginalna logika resetu HP (potencjalny memory leak)
+            hum:GetPropertyChangedSignal("Health"):Connect(function()
+                hum.Health=0
+            end)
+        end
+    end)
+end
+
+local function TPFarm_Enable()
+    if TPFarm_Enabled then
+        return
+    end
+    TPFarm_Enabled=true
+    local killpart=workspace.Filter.Parts:FindFirstChild("Kill_Brick")
+    if killpart then
+        killpart:Destroy()
+    end
+    local me=LocalPlayer
+    if me.Character then
+        TPFarm_OnCharacterAdded(me.Character)
+    end
+    TPFarm_CharConnection=me.CharacterAdded:Connect(function(newChar)
+        if not TPFarm_Enabled then
+            return
+        end
+        TPFarm_OnCharacterAdded(newChar)
+        local tool=me.Backpack:FindFirstChildOfClass("Tool")
+        if tool and newChar then
+            tool.Parent=newChar
+        end
+    end)
+    TPFarm_RenderConnection=RunService.RenderStepped:Connect(function()
+        if not TPFarm_Enabled then
+            return
+        end
+        local char=me.Character
+        if char then
+            local humanoid=char:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health<=0 then
+                DeathRespawn_Event:InvokeServer("KMG4R904")
+            end
+        end
+    end)
+end
+
+local function TPFarm_Disable()
+    if not TPFarm_Enabled then
+        return
+    end
+    TPFarm_Enabled=false
+    if TPFarm_SteppedConnection then
+        TPFarm_SteppedConnection:Disconnect()
+        TPFarm_SteppedConnection=nil
+    end
+    if TPFarm_RenderConnection then
+        TPFarm_RenderConnection:Disconnect()
+        TPFarm_RenderConnection=nil
+    end
+    if TPFarm_CharConnection then
+        TPFarm_CharConnection:Disconnect()
+        TPFarm_CharConnection=nil
+    end
+end
+
+
+--======================= ANTI-FLING =========================--
+local run_af = RunService
+local plrs_af = Players
+local me_af = LocalPlayer
+local work = true
+wait(1)
+
+-- Główna pętla Anti-Fling z oryginału (działa zawsze)
+run_af.RenderStepped:Connect(function()
+    local char=me_af.Character
+    if not char then return end
+    local hrp=char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local oldVelocity=hrp.Velocity
+    for _, part in pairs(char:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanTouch=false
+            if part.Velocity.Magnitude>oldVelocity.Magnitude*3 then
+                part.Velocity=Vector3.zero
+            end
+        end
+    end
+    for _, player in pairs(plrs_af:GetPlayers()) do
+        if player~=me_af then
+            local plrChar=player.Character
+            if plrChar then
+                for _, part in pairs(plrChar:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        if part.Velocity.Magnitude>oldVelocity.Magnitude*3 then
+                            part.Velocity=Vector3.zero
+                            part.CanTouch=false
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Funkcje dla przycisku UI (kontrolują drugą, nadmiarową pętlę z oryginału)
+local AntiFling_Enabled=false
+local AntiFling_Connection=nil
+
+local function AntiFling_Enable()
+    if AntiFling_Enabled then return end
+    AntiFling_Enabled=true
+    if not AntiFling_Connection then
+        -- Ta pętla była duplikatem w oryginale
+        AntiFling_Connection=run_af.RenderStepped:Connect(function()
+            local char=me_af.Character
+            if not char then return end
+            local hrp=char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            local oldVelocity_inner=hrp.Velocity
+            for _, part in pairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanTouch=false
+                    if part.Velocity.Magnitude>oldVelocity_inner.Magnitude*3 then
+                        part.Velocity=Vector3.zero
+                    end
+                end
+            end
+            for _, player in pairs(plrs_af:GetPlayers()) do
+                if player~=me_af then
+                    local plrChar=player.Character
+                    if plrChar then
+                        for _, part in pairs(plrChar:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                if part.Velocity.Magnitude>oldVelocity_inner.Magnitude*3 then
+                                    part.Velocity=Vector3.zero
+                                    part.CanTouch=false
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function AntiFling_Disable()
+    if not AntiFling_Enabled then return end
+    AntiFling_Enabled=false
+    if AntiFling_Connection then
+        AntiFling_Connection:Disconnect()
+        AntiFling_Connection=nil
+    end
+end
+
+
+--======================= AIMBOT (Logika Oryginalna + Poprawka Błędu Nil) =========================--
+local players_aim = Players
+local localPlayer_aim = LocalPlayer
+local CurrentCamera_aim = workspace.CurrentCamera
+local TweenService_aim = TweenService
+local UserInputService_aim = UserInputService
+local mouseLocation_aim = UserInputService_aim.GetMouseLocation
+local RunService_aim = RunService
+
+-- WAŻNE: Definicja AimBotSettings MUSI być PRZED funkcjami, które jej używają.
+local AimBotSettings = {
+    Enabled = false; TeamCheck = false; WallCheck = true; StickyAim = false;
+    UseMouse = true; MouseBind = "MouseButton2"; Keybind = nil; -- Usunięto domyślny bind 'E'
+    ShowFov = false; Fov = 100;
+    Smoothing = 0.02; AimPart = "HumanoidRootPart";
+    IsAimKeyDown = false; Target = nil; CameraTween = nil;
+}
+
+-- Definicje funkcji pomocniczych (zgodne z logiką oryginału i poprawkami)
+local function IsAlive_aim(Player)
+    -- Dodano sprawdzenie czy Player.Character istnieje przed dostępem do Humanoid
+    return Player and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") and Player.Character.Humanoid.Health > 0
+end
+
+local function GetTeam_aim(Player)
+    -- Dodano sprawdzenie Player.Team przed dostępem do Name
+    if not localPlayer_aim.Neutral and Player and Player.Team and game:GetService("Teams"):FindFirstChild(Player.Team.Name) then
+        return game:GetService("Teams")[Player.Team.Name];
+    end
+    return nil;
+end
+
+-- Poprawiona funkcja isVisible_aim (przyjmuje pozycję, nie instancję)
+local function isVisible_aim(targetPosition, character)
+    -- Sprawdzenie czy WallCheck jest włączony musi odwoływać się do tabeli AimBotSettings
+    if not AimBotSettings.WallCheck then
+        return true;
+    end
+
+    -- Upewnij się, że localPlayer_aim.Character istnieje
+    local ignoreList = {CurrentCamera_aim}
+    if localPlayer_aim.Character then
+         table.insert(ignoreList, localPlayer_aim.Character)
+    end
+    -- Upewnij się, że character i jego Head istnieją
+    if character and character:FindFirstChild("Head") and character.Head.Parent then
+        table.insert(ignoreList, character.Head.Parent)
+    end
+
+    -- Użyj pcall dla bezpieczeństwa przy GetPartsObscuringTarget
+    local success, obscured = pcall(function()
+        return CurrentCamera_aim:GetPartsObscuringTarget({targetPosition}, ignoreList)
+    end)
+
+    -- Jeśli pcall się nie powiódł lub zwrócił nil, załóż, że jest zasłonięty (bezpieczniej)
+    if not success or obscured == nil then
+        return false
+    end
+    return #obscured == 0;
+end
+
+-- Poprawiona funkcja CameraGetClosestToMouse_aim (przekazuje pozycję do isVisible_aim)
+local function CameraGetClosestToMouse_aim()
+    -- Odwołanie do Fov musi używać tabeli AimBotSettings
+    local AimFov = AimBotSettings.Fov;
+    local targetPlayer = nil;
+
+    for i, v in pairs(players_aim:GetPlayers()) do
+        if v ~= localPlayer_aim then
+            -- Odwołanie do TeamCheck musi używać tabeli AimBotSettings
+            if AimBotSettings.TeamCheck ~= true or GetTeam_aim(v) ~= GetTeam_aim(localPlayer_aim) then
+                if IsAlive_aim(v) then
+                    local char = v.Character
+                    -- Odwołanie do AimPart musi używać tabeli AimBotSettings
+                    local aimPartInstance = char and char:FindFirstChild(AimBotSettings.AimPart)
+                    if aimPartInstance then
+                        local aimPartPosition = aimPartInstance.Position
+                        -- Bezpieczne wywołanie WorldToViewportPoint
+                        local successWTV, screen_pos, on_screen = pcall(function() return CurrentCamera_aim:WorldToViewportPoint(aimPartPosition) end)
+                        if successWTV and on_screen then
+                             local screen_pos_2D = Vector2.new(screen_pos.X, screen_pos.Y)
+                             local successMouseLoc, mousePos = pcall(mouseLocation_aim, UserInputService_aim)
+                             if not successMouseLoc then mousePos = Vector2.new() end -- Domyślna pozycja myszy w razie błędu
+                             local new_magnitude = (screen_pos_2D - mousePos).Magnitude
+                             -- Przekaż pozycję i postać do isVisible_aim
+                             if new_magnitude < AimFov and isVisible_aim(aimPartPosition, char) then
+                                AimFov = new_magnitude;
+                                targetPlayer = v;
+                             end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return targetPlayer;
+end
+
+-- Listener InputBegan (zgodny z logiką oryginału + sprawdzenie AimBotSettings)
+UserInputService_aim.InputBegan:Connect(function(input, gameProcessedEvent)
+    -- Sprawdź czy AimBotSettings istnieje PRZED próbą dostępu do Enabled
+    if not AimBotSettings then return end
+    if gameProcessedEvent or not AimBotSettings.Enabled then return end
+
+    if not AimBotSettings.UseMouse and AimBotSettings.Keybind and input.KeyCode == AimBotSettings.Keybind then
+        AimBotSettings.Target = CameraGetClosestToMouse_aim();
+        AimBotSettings.IsAimKeyDown = true;
+    elseif AimBotSettings.UseMouse then
+        local bind = ""
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            bind = "MouseButton1"
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+            bind = "MouseButton2"
+        end
+
+        if bind == AimBotSettings.MouseBind then
+            AimBotSettings.Target = CameraGetClosestToMouse_aim();
+            AimBotSettings.IsAimKeyDown = true;
+        end
+    end
+end)
+
+-- Listener InputEnded (zgodny z logiką oryginału + sprawdzenie AimBotSettings)
+UserInputService_aim.InputEnded:Connect(function(input, gameProcessedEvent)
+     -- Sprawdź czy AimBotSettings istnieje PRZED próbą dostępu do Enabled
+    if not AimBotSettings then return end
+    if gameProcessedEvent or not AimBotSettings.Enabled then return end
+
+    if not AimBotSettings.UseMouse and AimBotSettings.Keybind and input.KeyCode == AimBotSettings.Keybind then
+        AimBotSettings.IsAimKeyDown = false;
+        AimBotSettings.Target = nil;
+        if AimBotSettings.CameraTween then
+            AimBotSettings.CameraTween:Cancel();
+            AimBotSettings.CameraTween = nil;
+        end
+    elseif AimBotSettings.UseMouse then
+        local bind = ""
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            bind = "MouseButton1"
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+            bind = "MouseButton2"
+        end
+
+        if bind == AimBotSettings.MouseBind then
+            AimBotSettings.IsAimKeyDown = false;
+            AimBotSettings.Target = nil;
+            if AimBotSettings.CameraTween then
+                AimBotSettings.CameraTween:Cancel();
+                AimBotSettings.CameraTween = nil;
+            end
+        end
+    end
+end)
+
+-- Listener Heartbeat (zgodny z logiką oryginału + sprawdzenie AimBotSettings)
+RunService_aim.Heartbeat:Connect(function(deltaTime)
+    -- === TUTAJ JEST LINIA POWODUJĄCA BŁĄD ===
+    -- Sprawdź czy AimBotSettings istnieje PRZED próbą dostępu do Enabled
+    if AimBotSettings and AimBotSettings.Enabled then
+        if AimBotSettings.IsAimKeyDown then
+            local currentTarget = AimBotSettings.Target
+
+            if AimBotSettings.StickyAim then
+                 if currentTarget ~= nil and IsAlive_aim(currentTarget) then
+                    local targetChar = currentTarget.Character
+                    local aimPart = targetChar and targetChar:FindFirstChild(AimBotSettings.AimPart)
+                    if aimPart then
+                        if AimBotSettings.CameraTween then AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween = nil; end
+                        -- Bezpieczniejsza predykcja pinga
+                        local networkPing = 0
+                        local successPing, resultPing = pcall(function() return localPlayer_aim:GetNetworkPing() end)
+                        if successPing then networkPing = resultPing end
+                        local predictionOffset = aimPart.Velocity and aimPart.Velocity * (networkPing * 0.1) or Vector3.new() -- Użyj 0.1 jako mnożnik zamiast Vector3.zero
+                        local targetCFrame = CFrame.new(CurrentCamera_aim.CFrame.Position, aimPart.Position + predictionOffset)
+
+                        -- Użyj pcall dla bezpieczeństwa tworzenia tweena
+                        local successTween, tweenResult = pcall(function()
+                            AimBotSettings.CameraTween = TweenService_aim:Create(CurrentCamera_aim, TweenInfo.new(AimBotSettings.Smoothing, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = targetCFrame});
+                            AimBotSettings.CameraTween:Play();
+                        end)
+                        if not successTween then warn("Aimbot Tween creation failed:", tweenResult) end
+
+                    else
+                        AimBotSettings.Target = nil
+                        if AimBotSettings.CameraTween then AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween = nil; end
+                    end
+                 else
+                    local newTarget = CameraGetClosestToMouse_aim()
+                    AimBotSettings.Target = newTarget
+                    currentTarget = newTarget
+
+                    if currentTarget and IsAlive_aim(currentTarget) then
+                        local targetChar = currentTarget.Character
+                        local aimPart = targetChar and targetChar:FindFirstChild(AimBotSettings.AimPart)
+                        if aimPart then
+                            if AimBotSettings.CameraTween then AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween = nil; end
+                             local networkPing = 0; local sP, rP=pcall(function() return localPlayer_aim:GetNetworkPing() end); if sP then networkPing=rP end
+                             local predictionOffset = aimPart.Velocity and aimPart.Velocity * (networkPing * 0.1) or Vector3.new()
+                             local targetCFrame = CFrame.new(CurrentCamera_aim.CFrame.Position, aimPart.Position + predictionOffset)
+
+                             local sT, tR = pcall(function()
+                                AimBotSettings.CameraTween = TweenService_aim:Create(CurrentCamera_aim, TweenInfo.new(AimBotSettings.Smoothing, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = targetCFrame});
+                                AimBotSettings.CameraTween:Play();
+                             end)
+                             if not sT then warn("Aimbot Tween creation failed (new target):", tR) end
+                        end
+                    elseif AimBotSettings.CameraTween then
+                         AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween = nil;
+                    end
+                 end
+
+            else -- Nie StickyAim
+                local target = CameraGetClosestToMouse_aim();
+                if target ~= nil and IsAlive_aim(target) then
+                    local targetChar = target.Character
+                    local aimPart = targetChar and targetChar:FindFirstChild(AimBotSettings.AimPart)
+                    if aimPart then
+                        if AimBotSettings.CameraTween then AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween = nil; end
+                        local networkPing = 0; local sP, rP=pcall(function() return localPlayer_aim:GetNetworkPing() end); if sP then networkPing=rP end
+                        local predictionOffset = aimPart.Velocity and aimPart.Velocity * (networkPing * 0.1) or Vector3.new()
+                        local targetCFrame = CFrame.new(CurrentCamera_aim.CFrame.Position, aimPart.Position + predictionOffset)
+
+                        local sT, tR = pcall(function()
+                            AimBotSettings.CameraTween = TweenService_aim:Create(CurrentCamera_aim, TweenInfo.new(AimBotSettings.Smoothing, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = targetCFrame});
+                            AimBotSettings.CameraTween:Play();
+                        end)
+                         if not sT then warn("Aimbot Tween creation failed (non-sticky):", tR) end
+
+                    else
+                         if AimBotSettings.CameraTween then AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween = nil; end
+                    end
+                elseif AimBotSettings.CameraTween ~= nil then
+                    AimBotSettings.CameraTween:Cancel();
+                    AimBotSettings.CameraTween = nil;
+                end
+            end
+        end
+    -- Dodano 'else' na wypadek gdyby AimBotSettings było nil - nic nie rób
+    -- elseif not AimBotSettings then
+       -- Można dodać warn("AimBotSettings jest nil w Heartbeat!") dla debugowania
+    end
+end)
+
+-- Funkcje Enable/Disable (pozostają takie same jak w nowym skrypcie)
+local function Aimbot_Enable()
+    if AimBotSettings then AimBotSettings.Enabled=true else warn("Cannot enable Aimbot: AimBotSettings is nil") end
+end
+local function Aimbot_Disable()
+    if AimBotSettings then
+        AimBotSettings.Enabled=false; AimBotSettings.IsAimKeyDown=false; AimBotSettings.Target=nil;
+        if AimBotSettings.CameraTween then AimBotSettings.CameraTween:Cancel(); AimBotSettings.CameraTween=nil end
+    else
+         warn("Cannot disable Aimbot: AimBotSettings is nil")
+    end
+end
+
+--======================= INF STAMINA (Logika Oryginalna) =========================--
+-- WAŻNE: Poniższy blok kodu (od `local UserInputService_stam...` do `end)`)
+--        musi zostać umieszczony w GŁÓWNYM zakresie skryptu (nie wewnątrz innej funkcji),
+--        aby hook został wykonany raz podczas ładowania skryptu.
+
+local UserInputService_stam = UserInputService -- Użyj UserInputService zdefiniowanego na górze skryptu
+local isInfiniteStaminaEnabled = false -- Zmienna stanu
+local oldStaminaFunction = nil -- Przechowuje oryginalną funkcję
+local targetFunction = nil -- Funkcja docelowa z upvalue
+
+do -- Używamy 'do...end' aby ograniczyć zasięg zmiennych lokalnych dla hooka
+    local success_hook, result_hook = pcall(function()
+        -- Spróbuj znaleźć funkcję docelową (zakładając, że ścieżka jest poprawna)
+        local env = nil
+        local success_env1, env1 = pcall(getrenv)
+        if success_env1 then env = env1 else local success_env2, env2 = pcall(getfenv); if success_env2 then env = env2 end end
+
+        if env and env._G and env._G.S_Take then
+             local success_upval, upval = pcall(getupvalue, env._G.S_Take, 2)
+             if success_upval and type(upval) == 'function' then
+                 targetFunction = upval
+             else
+                 warn("Inf Stamina: Nie można pobrać upvalue 2 lub nie jest to funkcja.")
+             end
+        else
+             warn("Inf Stamina: Nie znaleziono _G.S_Take.")
+        end
+
+        -- Zahacz funkcję, jeśli została znaleziona
+        if targetFunction then
+             local hookSuccess, hookResult = pcall(function()
+                 oldStaminaFunction = hookfunction(
+                     targetFunction,
+                     function(v1, ...) -- Nowa funkcja zastępująca oryginalną
+                         local args = {...} -- Zbieranie pozostałych argumentów
+                         if isInfiniteStaminaEnabled then
+                             -- Jeśli nieskończona stamina jest WŁĄCZONA, zmień ilość zabieranej staminy na 0
+                             -- Wywołaj oryginalną funkcję z v1 = 0 i resztą argumentów
+                             return oldStaminaFunction(0, unpack(args))
+                         else
+                             -- Jeśli nieskończona stamina jest WYŁĄCZONA, wywołaj oryginalną funkcję bez zmian
+                             return oldStaminaFunction(v1, unpack(args))
+                         end
+                     end
+                 )
+             end)
+             if not hookSuccess then
+                  warn("Inf Stamina: hookfunction nie powiódł się: ", hookResult)
+                  oldStaminaFunction = nil -- Upewnij się, że nie próbujemy użyć nieudanej funkcji hooka
+             end
+        end
+    end)
+    if not success_hook then
+        warn("Inf Stamina: Wystąpił błąd podczas próby hookowania: ", result_hook)
+    end
+end -- Koniec bloku 'do' dla hooka
+
+-- Funkcje Enable/Disable (tylko przełączają flagę, jak w oryginale)
+local function InfiniteStamina_Enable()
+    if not oldStaminaFunction then
+        warn("Inf Stamina: Funkcja staminy nie została zahaczona. Infinite Stamina nie działa.")
+        -- Można dodać próbę ponownego hookowania tutaj, jeśli chcesz zachować część logiki z nowego skryptu
+        return
+    end
+    isInfiniteStaminaEnabled = true
+end
+
+local function InfiniteStamina_Disable()
+    -- Nie trzeba sprawdzać oldStaminaFunction, bo wyłączenie jest bezpieczne nawet bez hooka
+    isInfiniteStaminaEnabled = false
+end
+
+
+--======================= INVISIBILITY (Original Logic, Reverted Disable) =========================--
+InvisEnabled = false -- Zadeklaruj globalnie
+
+local Invis_Do_Block = true
+do
+    repeat task.wait() until game:IsLoaded();
+    local cloneref = cloneref or function(...) return ... end;
+    local Service = setmetatable({}, { __index = function(_, k) local s,r=pcall(function() return cloneref(game:GetService(k)) end); return s and r end })
+    local Plrs_invis = Service.Players; local CoreGui_invis = Service.CoreGui; local RunSvc_invis = Service.RunService; local UserInputSvc_invis = Service.UserInputService; local Workspace_invis = Service.Workspace;
+    if not Plrs_invis then warn("Invis: Players service not found."); return end;
+    local Player_invis = Plrs_invis.LocalPlayer; if not Player_invis then warn("Invis: LocalPlayer not found."); return end;
+    local Character_invis = Player_invis.Character or Player_invis.CharacterAdded:Wait();
+    local HumanoidRootPart_invis = Character_invis:WaitForChild("HumanoidRootPart", 5);
+    local Humanoid_invis = Character_invis:WaitForChild("Humanoid", 5);
+    if not HumanoidRootPart_invis or not Humanoid_invis then warn("Invis: Failed to get HRP or Humanoid."); return end;
+    Player_invis.CharacterAdded:Connect(function(NewCharacter) Character_invis=NewCharacter; HumanoidRootPart_invis=Character_invis:WaitForChild("HumanoidRootPart",5); Humanoid_invis=Character_invis:WaitForChild("Humanoid",5); if not HumanoidRootPart_invis or not Humanoid_invis then warn("Invis: Failed to get HRP or Humanoid on respawn.") end end);
+    if not Character_invis:FindFirstChild("Torso") then pcall(function() local StarterGui=Service.StarterGui or game:GetService("StarterGui"); if StarterGui then StarterGui:SetCore("SendNotification",{Title="FAILED",Text="Must be R6",Duration=5}) end end) end;
+    local function Grounded_invis() return Humanoid_invis and Humanoid_invis.Parent and Humanoid_invis.FloorMaterial~=Enum.Material.Air; end;
+    -- Usunięto lokalną deklarację InvisEnabled, używamy globalnej
+    local Heartbeat_invis = RunSvc_invis and RunSvc_invis.Heartbeat; local RenderStepped_invis = RunSvc_invis and RunSvc_invis.RenderStepped;
+    if not Heartbeat_invis or not RenderStepped_invis then warn("Invis: RunService events not found."); return end;
+    local GUI_invis = nil; local WarnLabel_invis = nil;
+    if CoreGui_invis then GUI_invis=Instance.new("ScreenGui"); GUI_invis.Name="WarningGUI"; GUI_invis.Parent=CoreGui_invis; WarnLabel_invis=Instance.new("TextLabel",GUI_invis); WarnLabel_invis.Text="⚠️You are visible⚠️"; WarnLabel_invis.Visible=false; WarnLabel_invis.Position=UDim2.new(0.5,0,0.75,0); WarnLabel_invis.AnchorPoint=Vector2.new(0.5,0); WarnLabel_invis.BackgroundTransparency=1; WarnLabel_invis.TextSize=32; WarnLabel_invis.TextColor3=Color3.fromRGB(190,190,190); WarnLabel_invis.Font=Enum.Font.SourceSansBold; else warn("Invis: CoreGui service not found, cannot create WarningLabel.") end;
+    local originalCameraSubject = nil;
+
+    -- Definicje funkcji lokalnych w bloku 'do'
+    local function Invis_Enable_Local()
+        if InvisEnabled then return end;
+        if not Humanoid_invis or not HumanoidRootPart_invis or not Workspace_invis or not Workspace_invis.CurrentCamera then warn("Invis: Cannot enable, missing components."); return end;
+        InvisEnabled=true; originalCameraSubject=Workspace_invis.CurrentCamera.CameraSubject; Workspace_invis.CurrentCamera.CameraSubject=HumanoidRootPart_invis;
+    end;
+    local function Invis_Disable_Local()
+        if not InvisEnabled then return end;
+        InvisEnabled=false;
+        if Workspace_invis and Workspace_invis.CurrentCamera and originalCameraSubject then Workspace_invis.CurrentCamera.CameraSubject=originalCameraSubject; originalCameraSubject=nil; end;
+        if WarnLabel_invis then WarnLabel_invis.Visible=false; end;
+        -- Reset przezroczystości obsługiwany przez Heartbeat
+    end;
+
+    -- Przypisanie do globalnych referencji, aby przycisk działał
+    Invis_Enable = Invis_Enable_Local
+    Invis_Disable = Invis_Disable_Local
+
+    -- Pętla Heartbeat
+    Heartbeat_invis:Connect(function(_)
+        if not Character_invis or not Character_invis.Parent or not Humanoid_invis or not HumanoidRootPart_invis or not Workspace_invis or not Workspace_invis.CurrentCamera then
+            if InvisEnabled then
+                pcall(Invis_Disable) -- Bezpieczne wywołanie disable
+            end
+            return
+        end
+
+        if not InvisEnabled then -- Czytaj GLOBALNĄ flagę
+            for _, v in ipairs(Character_invis:GetDescendants()) do
+                if v:IsA("BasePart") and v.Transparency == 0.5 then
+                    v.Transparency = 0; -- Przywróć normalną przezroczystość
+                end
+            end
+            if WarnLabel_invis then
+                WarnLabel_invis.Visible = false
+            end
+            return; -- Zakończ, jeśli wyłączone
+        end
+
+        -- Logika, gdy włączone...
+        if WarnLabel_invis then
+            WarnLabel_invis.Visible = not Grounded_invis();
+        end
+        local CF=CFrame;
+        local _, y=Workspace_invis.CurrentCamera.CFrame:ToOrientation();
+        HumanoidRootPart_invis.CFrame=CF.new(HumanoidRootPart_invis.CFrame.Position)*CF.fromOrientation(0,y,0);
+        local OldCFrame=HumanoidRootPart_invis.CFrame;
+        local OldCameraOffset=Humanoid_invis.CameraOffset;
+        HumanoidRootPart_invis.CFrame=HumanoidRootPart_invis.CFrame*CF.Angles(math.rad(90),0,0);
+        Humanoid_invis.CameraOffset=Vector3.new(0,1.44,0);
+        local Track=nil;
+        local animSuccess, animResult=pcall(function()
+            local Animation=Instance.new("Animation"); Animation.AnimationId="rbxassetid://215384594";
+            Track=Humanoid_invis:LoadAnimation(Animation);
+            Track.Priority=Enum.AnimationPriority.Action4;
+            Track:Play(); Track:AdjustSpeed(0); Track.TimePosition=0.3;
+        end);
+        if not animSuccess then warn("Invis: Animation failed - ", animResult) end;
+        RenderStepped_invis:Wait();
+        Humanoid_invis.CameraOffset=OldCameraOffset;
+        HumanoidRootPart_invis.CFrame=OldCFrame;
+        if Track then Track:Stop(); Track:Destroy() end;
+        local LookVector=Workspace_invis.CurrentCamera.CFrame.LookVector;
+        local Horizontal=Vector3.new(LookVector.X,0,LookVector.Z).Unit;
+        local TargetCFrame=CFrame.new(HumanoidRootPart_invis.Position, HumanoidRootPart_invis.Position+Horizontal);
+        HumanoidRootPart_invis.CFrame=TargetCFrame;
+        for i, v in ipairs(Character_invis:GetDescendants()) do
+            if (v:IsA("BasePart") and v.Transparency~=1) then
+                v.Transparency=0.5;
+            end
+        end
+    end);
+end -- Koniec bloku 'do' dla Invisibility
+
+
+--================= 3 Save-Places =================--
+local event_save=DeathRespawn_Event
+local SaveCube_Enabled=false; local SaveCube_Connection; local SaveCube_Position=Vector3.new(-4597,-152,-1326);
+local function SaveCube_Enable()
+    if SaveCube_Enabled then return end; SaveCube_Enabled=true
+    local killpart=workspace.Filter.Parts:FindFirstChild("Kill_Brick"); if killpart then killpart:Destroy() end
+    SaveCube_Connection=RunService.RenderStepped:Connect(function()
+        if not SaveCube_Enabled then return end; local char=LocalPlayer.Character; if not char then return end
+        local hrp=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+        if hrp then hrp.CFrame=CFrame.new(SaveCube_Position) end
+        local tool=LocalPlayer.Backpack:FindFirstChildOfClass("Tool"); if tool and tool.Parent~=char then wait(1); tool.Parent=char end
+        if hum and hum.Health<=0 then event_save:InvokeServer("KMG4R904") end
+    end)
+end
+local function SaveCube_Disable()
+    if not SaveCube_Enabled then return end; SaveCube_Enabled=false
+    if SaveCube_Connection then SaveCube_Connection:Disconnect(); SaveCube_Connection=nil end
+end
+
+local SaveSewers_Enabled=false; local SaveSewers_Connection; local SaveSewers_Position=Vector3.new(-4162,-84,-498);
+local function SaveSewers_Enable()
+    if SaveSewers_Enabled then return end; SaveSewers_Enabled=true
+    local killpart=workspace.Filter.Parts:FindFirstChild("Kill_Brick"); if killpart then killpart:Destroy() end
+    SaveSewers_Connection=RunService.RenderStepped:Connect(function()
+        if not SaveSewers_Enabled then return end; local char=LocalPlayer.Character; if not char then return end
+        local hrp=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+        if hrp then hrp.CFrame=CFrame.new(SaveSewers_Position) end
+        local tool=LocalPlayer.Backpack:FindFirstChildOfClass("Tool"); if tool and tool.Parent~=char then wait(1); tool.Parent=char end
+        if hum and hum.Health<=0 then event_save:InvokeServer("KMG4R904") end
+    end)
+end
+local function SaveSewers_Disable()
+    if not SaveSewers_Enabled then return end; SaveSewers_Enabled=false
+    if SaveSewers_Connection then SaveSewers_Connection:Disconnect(); SaveSewers_Connection=nil end
+end
+
+local SaveVibe_Enabled=false; local SaveVibe_Connection; local SaveVibe_Position=Vector3.new(-4805,-201,-855);
+local function SaveVibe_Enable()
+    if SaveVibe_Enabled then return end; SaveVibe_Enabled=true
+    local killpart=workspace.Filter.Parts:FindFirstChild("Kill_Brick"); if killpart then killpart:Destroy() end
+    SaveVibe_Connection=RunService.RenderStepped:Connect(function()
+        if not SaveVibe_Enabled then return end; local char=LocalPlayer.Character; if not char then return end
+        local hrp=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+        if hrp then hrp.CFrame=CFrame.new(SaveVibe_Position) end
+        local tool=LocalPlayer.Backpack:FindFirstChildOfClass("Tool"); if tool and tool.Parent~=char then wait(1); tool.Parent=char end
+        if hum and hum.Health<=0 then event_save:InvokeServer("KMG4R904") end
+    end)
+end
+local function SaveVibe_Disable()
+    if not SaveVibe_Enabled then return end; SaveVibe_Enabled=false
+    if SaveVibe_Connection then SaveVibe_Connection:Disconnect(); SaveVibe_Connection=nil end
+end
+
+
+--======================= NO RECOIL =========================--
+local NoRecoil_Enabled=false
+local NoRecoil_Connections={}
+local GlobalOriginalValues={}
+local WeaponCache={}
+local Settings={GunMods={NoRecoil=true,Spread=true,SpreadAmount=0}}
+local Player_nr=LocalPlayer
+
+local function cacheWeapons()
+    WeaponCache={};
+    for _, v in pairs(getgc(true)) do
+        if type(v)=='table' and rawget(v,'EquipTime') then
+            table.insert(WeaponCache, v);
+            if not GlobalOriginalValues[v] then
+                GlobalOriginalValues[v]={
+                    Recoil=v.Recoil,CameraRecoilingEnabled=v.CameraRecoilingEnabled,
+                    AngleX_Min=v.AngleX_Min,AngleX_Max=v.AngleX_Max,
+                    AngleY_Min=v.AngleY_Min,AngleY_Max=v.AngleY_Max,
+                    AngleZ_Min=v.AngleZ_Min,AngleZ_Max=v.AngleZ_Max,
+                    Spread=v.Spread
+                }
+            end
+        end
+    end
+end
+
+local function applyGunMods()
+    for _, weapon in ipairs(WeaponCache) do
+        if Settings.GunMods.NoRecoil then
+            weapon.Recoil=0; weapon.CameraRecoilingEnabled=false;
+            weapon.AngleX_Min=0; weapon.AngleX_Max=0;
+            weapon.AngleY_Min=0; weapon.AngleY_Max=0;
+            weapon.AngleZ_Min=0; weapon.AngleZ_Max=0;
+        end;
+        if Settings.GunMods.Spread then
+            weapon.Spread=Settings.GunMods.SpreadAmount
+        end
+    end
+end
+
+local function resetGunMods()
+    for weapon, values in pairs(GlobalOriginalValues) do
+        weapon.Recoil=values.Recoil; weapon.CameraRecoilingEnabled=values.CameraRecoilingEnabled;
+        weapon.AngleX_Min=values.AngleX_Min; weapon.AngleX_Max=values.AngleX_Max;
+        weapon.AngleY_Min=values.AngleY_Min; weapon.AngleY_Max=values.AngleY_Max;
+        weapon.AngleZ_Min=values.AngleZ_Min; weapon.AngleZ_Max=values.AngleZ_Max;
+        weapon.Spread=values.Spread;
+    end
+end
+
+local function handleWeapon(weapon)
+    if NoRecoil_Enabled then
+        task.wait(0.1);
+        cacheWeapons();
+        applyGunMods()
+    end
+end
+
+local function onCharacterAdded_nr(character)
+    for _, child in ipairs(character:GetChildren()) do if child:IsA("Tool") then handleWeapon(child) end end;
+    table.insert(NoRecoil_Connections, character.ChildAdded:Connect(function(child) if child:IsA("Tool") then handleWeapon(child) end end));
+    local humanoid=character:WaitForChild("Humanoid",2);
+    if humanoid then
+        table.insert(NoRecoil_Connections, humanoid.Died:Connect(function() if NoRecoil_Enabled then task.wait(1.5); cacheWeapons(); applyGunMods() end end))
+    end
+end
+
+function NoRecoil_Enable()
+    if NoRecoil_Enabled then return end;
+    NoRecoil_Enabled=true;
+    cacheWeapons();
+    applyGunMods();
+    table.insert(NoRecoil_Connections, Player_nr.CharacterAdded:Connect(onCharacterAdded_nr));
+    if Player_nr.Character then onCharacterAdded_nr(Player_nr.Character) end
+end
+
+function NoRecoil_Disable()
+    if not NoRecoil_Enabled then return end;
+    NoRecoil_Enabled=false;
+    resetGunMods();
+    for _, conn in ipairs(NoRecoil_Connections) do conn:Disconnect() end;
+    NoRecoil_Connections={};
+end
+
+
+--======================= WALLHACK (ESP) =========================--
+local ESP_Enabled=false
+local ESP_Loading=false
+local LastToggleTime=0
+local DEBOUNCE_TIME=0.5
+
+function ESP_Enable()
+    if os.clock()-LastToggleTime<DEBOUNCE_TIME then return end; LastToggleTime=os.clock();
+    if ESP_Loading or ESP_Enabled then return end;
+    ESP_Loading=true;
+    local success, err=pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/EQResp", true))();
+        ESP_Enabled=true;
+        ESP_Loading=false
+    end);
+    if not success then
+        warn("Błąd ładowania ESP: "..tostring(err));
+        ESP_Loading=false;
+        ESP_Enabled=false;
+    end
+end
+
+function ESP_Disable()
+    if os.clock()-LastToggleTime<DEBOUNCE_TIME then return end; LastToggleTime=os.clock();
+    if not ESP_Enabled then return end;
+    ESP_Enabled=false;
+    local coreGui=game:GetService("CoreGui");
+    for _, name in pairs({"Folder","ESP_Holder","ESP_Folder","ESP"}) do
+        local folder=coreGui:FindFirstChild(name);
+        if folder then folder:Destroy() end
+    end
+end
+
+
+-------------------------------------------------------------------------------
+--  5. Funkcja tworzenia wiersza przycisku (createToggleRowFrame)
+--     + Zmienne Globalne dla Bindów + Poprawka Hover Koloru
+-------------------------------------------------------------------------------
+local buttonHoverColor = Color3.fromRGB(40, 40, 50)
+local buttonColor = Color3.fromRGB(25, 25, 30)
+local buttonStrokeColor = Color3.fromRGB(60, 60, 75)
+local buttonTextColor = Color3.fromRGB(210, 210, 210)
+local buttonOnColor = Color3.fromRGB(70, 180, 100)
+local buttonOffColor = Color3.fromRGB(200, 80, 80)
+local bindButtonColor = Color3.fromRGB(45, 45, 55)
+local bindButtonHoverColor = Color3.fromRGB(60, 60, 75)
+
+-- === Zmienne globalne do obsługi bindów ===
+local activeBinds = {} -- Słownik: [Enum.KeyCode] = { frame, toggleButton, isEnabledFn, onEnable, onDisable, canToggle, updateFn }
+local currentRowWaitingForKey = nil
+local bindButtonReferences = {}
+local keyBindGetters = {}
+local keyBindSetters = {}
+local toggleButtonTweens = {} -- Dla poprawki hover
+local rowFunctionData = {} -- NOWA TABELA: Przechowuje statyczne funkcje dla każdej ramki
+
+-- === Funkcja tworząca wiersz ===
+local function createToggleRowFrame(scriptName, canToggle, isEnabledFn, onEnable, onDisable, getKeyBindFn, setKeyBindFn)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.BackgroundTransparency = 1
+    frame.Name = scriptName:gsub("%s+", "")
+
+    local horizontalLayout = Instance.new("UIListLayout")
+    horizontalLayout.FillDirection = Enum.FillDirection.Horizontal
+    horizontalLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    horizontalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    horizontalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    horizontalLayout.Padding = UDim.new(0, 5)
+    horizontalLayout.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.45, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = " " .. scriptName
+    label.TextColor3 = buttonTextColor
+    label.Font = Enum.Font.GothamSemibold
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.LayoutOrder = 1
+    label.Parent = frame
+
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0.25, 0, 0.8, 0)
+    toggleButton.Font = Enum.Font.GothamBold
+    toggleButton.TextSize = 12
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.BackgroundColor3 = buttonColor
+    toggleButton.BorderSizePixel = 0
+    toggleButton.AutoButtonColor = false
+    toggleButton.LayoutOrder = 2
+    toggleButton.Parent = frame
+
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 6)
+    toggleCorner.Parent = toggleButton
+    local toggleStroke = Instance.new("UIStroke")
+    toggleStroke.Color = buttonStrokeColor
+    toggleStroke.Thickness = 1
+    toggleStroke.Parent = toggleButton
+
+    local bindButton = nil
+
+    -- Definicja funkcji update MUSI być przed jej użyciem w zapisie do rowFunctionData
+    local updateToggleButtonVisuals -- Deklaracja wstępna
+
+    -- Funkcja do określania docelowego koloru przycisku toggle
+    local function getTargetToggleColor()
+        local enabledState = false
+        if type(isEnabledFn) == 'function' then
+            local success, result = pcall(isEnabledFn)
+            if success then enabledState = result end
+        end
+        if not canToggle then return Color3.fromRGB(80, 120, 220)
+        elseif enabledState then return buttonOnColor
+        else return buttonOffColor
+        end
+    end
+
+    -- Funkcja aktualizująca wygląd (tekst + kolor) - definicja
+    updateToggleButtonVisuals = function()
+        local enabledState = false
+        if type(isEnabledFn) == 'function' then
+            local success, result = pcall(isEnabledFn)
+            if success then enabledState = result else warn("Error in isEnabledFn for", scriptName, ":", result) end
+        else warn("isEnabledFn is not a function for", scriptName) end
+
+        if scriptName == " Invisibility" then print("[DEBUG] updateToggleButtonVisuals called for Invisibility. InvisEnabled:", InvisEnabled, "Calculated enabledState:", enabledState) end
+
+        local targetColor
+        if not canToggle then toggleButton.Text = "RUN"; targetColor = Color3.fromRGB(80, 120, 220);
+        elseif enabledState then toggleButton.Text = "ON"; targetColor = buttonOnColor
+        else toggleButton.Text = "OFF"; targetColor = buttonOffColor
+        end
+
+        if toggleButtonTweens[toggleButton] then toggleButtonTweens[toggleButton]:Cancel(); toggleButtonTweens[toggleButton] = nil end
+        toggleButton.BackgroundColor3 = targetColor
+    end
+
+    -- Zapisz dane funkcji dla tej ramki (NOWA TABELA)
+    rowFunctionData[frame] = {
+        isEnabledFn = isEnabledFn,
+        onEnable = onEnable,
+        onDisable = onDisable,
+        canToggle = canToggle,
+        updateFn = updateToggleButtonVisuals -- Zapisz referencję do lokalnej funkcji update
+    }
+
+    -- Przycisk Bind
+    if getKeyBindFn and setKeyBindFn then
+        bindButton = Instance.new("TextButton")
+        bindButton.Size = UDim2.new(0.25, 0, 0.8, 0)
+        bindButton.Font = Enum.Font.GothamMedium
+        bindButton.TextSize = 12
+        bindButton.TextColor3 = buttonTextColor
+        bindButton.BackgroundColor3 = bindButtonColor
+        bindButton.BorderSizePixel = 0
+        bindButton.AutoButtonColor = false
+        bindButton.LayoutOrder = 3
+        bindButton.Parent = frame
+
+        local bindCorner = Instance.new("UICorner"); bindCorner.CornerRadius = UDim.new(0, 6); bindCorner.Parent = bindButton
+        local bindStroke = Instance.new("UIStroke"); bindStroke.Color = buttonStrokeColor; bindStroke.Thickness = 1; bindStroke.Parent = bindButton
+
+        bindButtonReferences[frame] = bindButton
+        keyBindGetters[frame] = getKeyBindFn
+        keyBindSetters[frame] = setKeyBindFn
+
+        -- Dodaj początkowy wpis do activeBinds, jeśli klawisz jest już ustawiony
+        local initialKey = nil
+        local success, result = pcall(getKeyBindFn)
+        if success and result and typeof(result)=="EnumItem" then
+            initialKey = result
+            -- Zapisz PEŁNĄ informację pobraną z rowFunctionData
+            if rowFunctionData[frame] then
+                activeBinds[initialKey] = {
+                    frame = frame,
+                    toggleButton = toggleButton,
+                    isEnabledFn = rowFunctionData[frame].isEnabledFn,
+                    onEnable = rowFunctionData[frame].onEnable,
+                    onDisable = rowFunctionData[frame].onDisable,
+                    canToggle = rowFunctionData[frame].canToggle,
+                    updateFn = rowFunctionData[frame].updateFn
+                }
+            end
+        end
+    else
+        toggleButton.Size = UDim2.new(0.5, 0, 0.8, 0)
+        horizontalLayout.Padding = UDim.new(0, 10)
+    end
+
+    -- Funkcja aktualizująca tekst przycisku bind
+    local function updateBindButtonText()
+        if not bindButton then return end
+        local kb = nil
+        if type(getKeyBindFn) == 'function' then
+            local success, result = pcall(getKeyBindFn)
+            if success then kb = result else warn("Error in getKeyBindFn for", scriptName, ":", result) end
+        end
+        bindButton.Text = kb and typeof(kb)=="EnumItem" and kb.Name~="Unknown" and "["..kb.Name.."]" or "Bind"
+    end
+
+    -- Początkowa aktualizacja wyglądu
+    updateToggleButtonVisuals()
+    updateBindButtonText()
+
+    -- Poprawiona logika hover dla Toggle Button
+    toggleButton.MouseEnter:Connect(function()
+        if toggleButtonTweens[toggleButton] then toggleButtonTweens[toggleButton]:Cancel() end
+        local targetColor = getTargetToggleColor()
+        local hoverTargetColor = targetColor:Lerp(Color3.new(1, 1, 1), 0.2)
+        local tween = TweenService:Create(toggleButton, TweenInfo.new(0.1), { BackgroundColor3 = hoverTargetColor })
+        toggleButtonTweens[toggleButton] = tween
+        tween:Play()
+    end)
+    toggleButton.MouseLeave:Connect(function()
+        if toggleButtonTweens[toggleButton] then toggleButtonTweens[toggleButton]:Cancel() end
+        local targetColor = getTargetToggleColor()
+        local tween = TweenService:Create(toggleButton, TweenInfo.new(0.1), { BackgroundColor3 = targetColor })
+        toggleButtonTweens[toggleButton] = tween
+        tween:Play()
+    end)
+
+    -- Logika hover dla przycisku Bind
+    if bindButton then
+        bindButton.MouseEnter:Connect(function() TweenService:Create(bindButton, TweenInfo.new(0.1), { BackgroundColor3 = bindButtonHoverColor }):Play() end)
+        bindButton.MouseLeave:Connect(function() TweenService:Create(bindButton, TweenInfo.new(0.1), { BackgroundColor3 = bindButtonColor }):Play() end)
+
+        -- Logika kliknięcia przycisku Bind (ustawia flagę globalną)
+        local capturingKey = false
+        bindButton.MouseButton1Click:Connect(function()
+            if currentRowWaitingForKey and currentRowWaitingForKey ~= frame then
+                local prevBindButton=bindButtonReferences[currentRowWaitingForKey]
+                if prevBindButton then
+                    local getter=keyBindGetters[currentRowWaitingForKey]
+                    local prevKeyText="Bind"; if getter then local s,r=pcall(getter); if s and r and typeof(r)=="EnumItem" then prevKeyText="["..r.Name.."]" end end
+                    prevBindButton.Text=prevKeyText
+                end
+            end
+            if capturingKey then
+                capturingKey=false; updateBindButtonText(); currentRowWaitingForKey=nil
+            else
+                capturingKey=true; bindButton.Text="..."; currentRowWaitingForKey=frame
+                task.delay(5, function() if capturingKey and currentRowWaitingForKey==frame then capturingKey=false; updateBindButtonText(); currentRowWaitingForKey=nil end end)
+            end
+        end)
+    end
+
+    -- Logika kliknięcia przycisku Toggle
+    toggleButton.MouseButton1Click:Connect(function()
+        local enabledState = false; if type(isEnabledFn)=='function' then local s,r=pcall(isEnabledFn); if s then enabledState=r end end
+        if not canToggle then if type(onEnable)=='function' then pcall(onEnable) else warn("onEnable is not a function for",scriptName) end; toggleButton.Text="DONE"; toggleButton.BackgroundColor3=buttonOnColor:Lerp(Color3.fromRGB(15,15,20),0.3); toggleButton.Active=false; if bindButton then bindButton.Active=false end; return end
+        if enabledState then if type(onDisable)=='function' then pcall(onDisable) else warn("onDisable is not a function for",scriptName) end else if type(onEnable)=='function' then pcall(onEnable) else warn("onEnable is not a function for",scriptName) end end
+        updateToggleButtonVisuals()
+    end)
+
+    return frame
+end
+
+
+-- Zmodernizowana wersja createTPFarmTargetRow (Oryginalny komentarz)
+local function createTPFarmTargetRowFrame()
+    local frame = Instance.new("Frame")
+    frame.Size=UDim2.new(1,-20,0,35)
+    frame.BackgroundTransparency=1
+    frame.Name="TPFarmTarget"
+
+    local label = Instance.new("TextLabel")
+    label.Size=UDim2.new(0.4,0,1,0)
+    label.BackgroundTransparency=1
+    label.Text="  TP Target:"
+    label.TextColor3=buttonTextColor
+    label.Font=Enum.Font.GothamSemibold
+    label.TextSize=14
+    label.TextXAlignment=Enum.TextXAlignment.Left
+    label.Parent=frame
+
+    local inputContainer = Instance.new("Frame")
+    inputContainer.Size=UDim2.new(0.6,-5,0.8,0)
+    inputContainer.Position=UDim2.new(0.4,5,0.1,0)
+    inputContainer.BackgroundColor3=buttonColor
+    inputContainer.BorderSizePixel=0
+    inputContainer.Parent=frame
+
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius=UDim.new(0,6)
+    inputCorner.Parent=inputContainer
+    local inputStroke = Instance.new("UIStroke")
+    inputStroke.Color=buttonStrokeColor
+    inputStroke.Thickness=1
+    inputStroke.Parent=inputContainer
+
+    local input = Instance.new("TextBox")
+    input.Size=UDim2.new(1,-10,1,-4)
+    input.Position=UDim2.new(0,5,0,2)
+    input.BackgroundTransparency=1
+    input.TextColor3=Color3.new(1,1,1)
+    input.Font=Enum.Font.Gotham
+    input.TextSize=12
+    input.Text=TPFarm_TargetName -- Użyj ORYGINALNEJ zmiennej
+    input.PlaceholderText="Enter Nickname..."
+    input.ClearTextOnFocus=false
+    input.Parent=inputContainer
+
+    input.FocusLost:Connect(function(enterPressed)
+        TPFarm_TargetName=input.Text -- Aktualizuj ORYGINALNĄ zmienną
+    end)
+
+    inputContainer.MouseEnter:Connect(function()
+        TweenService:Create(inputContainer,TweenInfo.new(0.1),{BackgroundColor3=buttonHoverColor}):Play()
+    end)
+    inputContainer.MouseLeave:Connect(function()
+        TweenService:Create(inputContainer,TweenInfo.new(0.1),{BackgroundColor3=buttonColor}):Play()
+    end)
+    return frame
+end
+
+
+-------------------------------------------------------------------------------
+--  6. Definicje Kategorii i Tworzenie Przycisków Kategorii
+-------------------------------------------------------------------------------
+local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc" }
+local categoryButtons = {}
+local categoryFrames = {} -- Tabela przechowująca ramki dla każdej kategorii
+local activeCategoryButton = nil
+local defaultCategory = "Combat" -- Możesz zmienić domyślną kategorię
+
+local function switchCategory(categoryName)
+    local categoryButton = categoryButtons[categoryName]
+    if not categoryButton or categoryButton == activeCategoryButton then
+        return
+    end
+
+    -- Zresetuj poprzedni aktywny przycisk
+    if activeCategoryButton then
+        TweenService:Create(activeCategoryButton, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(20, 20, 25) }):Play()
+        activeCategoryButton.TextLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+    end
+
+    -- Ustaw nowy aktywny przycisk
+    TweenService:Create(categoryButton, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(40, 40, 50) }):Play()
+    categoryButton.TextLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    activeCategoryButton = categoryButton
+
+    -- Wyczyść contentFrame
+    for _, child in ipairs(contentFrame:GetChildren()) do
+        if child:IsA("Frame") and child.Name ~= "UIListLayout" and child.Name ~= "UICorner" then
+            child.Parent = nil -- Usuń z widoku
+        end
+    end
+
+    -- Dodaj ramki z nowej kategorii
+    if categoryFrames[categoryName] then
+        for i, frame in ipairs(categoryFrames[categoryName]) do
+            frame.Parent = contentFrame -- Dodaj do widoku
+            frame.LayoutOrder = i -- Ustaw kolejność dla UIListLayout
+        end
+        -- Zaktualizuj CanvasSize dla przewijania
+        local numItems = #categoryFrames[categoryName]
+        local itemHeight = 35 -- Wysokość jednej ramki (z createToggleRowFrame)
+        local padding = contentLayout.Padding.Offset
+        contentFrame.CanvasSize = UDim2.new(0, 0, 0, numItems * itemHeight + (numItems > 0 and (numItems - 1) * padding or 0) + 10) -- Dodatkowy padding na dole
+    else
+        contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Zeruj, jeśli kategoria pusta
+    end
+end
+
+-- Tworzenie przycisków kategorii w sidebarze
+for i, categoryName in ipairs(categories) do
+    categoryFrames[categoryName] = {} -- Inicjalizuj pustą listę ramek dla kategorii
+
+    local catButton = Instance.new("TextButton")
+    catButton.Name = categoryName .. "Button"
+    catButton.Size = UDim2.new(1, -10, 0, 30)
+    catButton.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    catButton.BorderSizePixel = 0
+    catButton.AutoButtonColor = false
+    catButton.LayoutOrder = i
+    catButton.Parent = sidebarFrame
+
+    local catCorner = Instance.new("UICorner")
+    catCorner.CornerRadius = UDim.new(0, 6)
+    catCorner.Parent = catButton
+
+    local catLabel = Instance.new("TextLabel")
+    catLabel.Name = "TextLabel"
+    catLabel.Size = UDim2.new(1, 0, 1, 0)
+    catLabel.BackgroundTransparency = 1
+    catLabel.Text = categoryName
+    catLabel.Font = Enum.Font.GothamSemibold
+    catLabel.TextSize = 14
+    catLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+    catLabel.Parent = catButton
+
+    -- Animacje i kliknięcie
+    catButton.MouseEnter:Connect(function()
+        if catButton ~= activeCategoryButton then
+            TweenService:Create(catButton, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(30, 30, 35) }):Play()
+        end
+    end)
+    catButton.MouseLeave:Connect(function()
+        if catButton ~= activeCategoryButton then
+            TweenService:Create(catButton, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(20, 20, 25) }):Play()
+        end
+    end)
+    catButton.MouseButton1Click:Connect(function()
+        switchCategory(categoryName)
+    end)
+
+    categoryButtons[categoryName] = catButton -- Zapisz referencję do przycisku
+end
+
+
+-------------------------------------------------------------------------------
+--  7. Создаём кнопки в нужном порядке (Oryginalny komentarz)
+--     Tworzenie Ramek dla Funkcji i Dodawanie do Kategorii (Używa ORYGINALNYCH funkcji)
+-------------------------------------------------------------------------------
+
+-- Lokalne zmienne do przechowywania wartości bindów (dla getterów/setterów)
+local flyBind_local=Fly_Bind
+local adminCheckBind_local=nil
+local meleeBind_local=nil
+local tpBind_local=nil
+local ssBind_local=nil
+local svBind_local=nil
+local infiniteStaminaBind_local=nil
+local nrBind_local=nil
+local espBind_local=nil
+local aimbotBind_local=AimBotSettings.Keybind -- Pobierz aktualną wartość (powinna być nil po poprawce)
+local invisBind_local=nil
+local antiFlingBind_local=nil
+local antiAFKBind_local = nil -- Dodana zmienna dla AntiAFK
+
+-- === Przypisanie ramek do kategorii (Wieloliniowe) ===
+
+-- Combat Category
+table.insert(categoryFrames.Combat,
+    createToggleRowFrame(" Melee Aura", true, function() return MeleeAura_Enabled end, MeleeAura_Enable, MeleeAura_Disable, function() return meleeBind_local end, function(k) meleeBind_local=k end)
+)
+table.insert(categoryFrames.Combat,
+    createToggleRowFrame(" Aimbot", true, function() return AimBotSettings.Enabled end, Aimbot_Enable, Aimbot_Disable, function() return aimbotBind_local end, function(k) aimbotBind_local=k; AimBotSettings.Keybind=k end)
+)
+table.insert(categoryFrames.Combat,
+    createToggleRowFrame(" No Recoil", true, function() return NoRecoil_Enabled end, NoRecoil_Enable, NoRecoil_Disable, function() return nrBind_local end, function(k) nrBind_local=k end)
+)
+
+-- Movement Category
+table.insert(categoryFrames.Movement,
+    createToggleRowFrame(" Fly", true, function() return Fly_Enabled end, Fly_Enable, Fly_Disable, function() return flyBind_local end, function(k) flyBind_local=k; Fly_Bind=k end)
+)
+table.insert(categoryFrames.Movement,
+    createToggleRowFrame(" Infinite Stamina", true, function() return isInfiniteStaminaEnabled end, InfiniteStamina_Enable, InfiniteStamina_Disable, function() return infiniteStaminaBind_local end, function(k) infiniteStaminaBind_local=k end)
+)
+
+-- Visuals Category
+table.insert(categoryFrames.Visuals,
+    createToggleRowFrame(" Wallhack", true, function() return ESP_Enabled end, ESP_Enable, ESP_Disable, function() return espBind_local end, function(k) espBind_local=k end)
+)
+table.insert(categoryFrames.Visuals,
+    createToggleRowFrame(" Invisibility", true, function() return InvisEnabled end, Invis_Enable, Invis_Disable, function() return invisBind_local end, function(k) invisBind_local=k end)
+)
+
+-- Teleport Category
+table.insert(categoryFrames.Farming,
+    createToggleRowFrame(" Teleport Farm", true, function() return TPFarm_Enabled end, TPFarm_Enable, TPFarm_Disable, function() return tpBind_local end, function(k) tpBind_local=k end)
+)
+table.insert(categoryFrames.Farming,
+    createTPFarmTargetRowFrame() -- Dodaj pole tekstowe pod spodem
+)
+table.insert(categoryFrames.Farming,
+    createToggleRowFrame(" Safe Sewers TP", true, function() return SaveSewers_Enabled end, SaveSewers_Enable, SaveSewers_Disable, function() return ssBind_local end, function(k) ssBind_local=k end)
+)
+table.insert(categoryFrames.Farming,
+    createToggleRowFrame(" Safe Vibecheck TP", true, function() return SaveVibe_Enabled end, SaveVibe_Enable, SaveVibe_Disable, function() return svBind_local end, function(k) svBind_local=k end)
+)
+
+-- Misc Category
+table.insert(categoryFrames.Misc,
+    createToggleRowFrame(" Anti AFK", true, function() return AntiAFK_Enabled_Dummy end, AntiAFK_Enable, AntiAFK_Disable, function() return antiAFKBind_local end, function(k) antiAFKBind_local=k end) -- Dodano funkcje bind dla AntiAFK
+)
+table.insert(categoryFrames.Misc,
+    createToggleRowFrame(" Admin Check", true, function() return AdminCheck_Enabled end, AdminCheck_Enable, AdminCheck_Disable, function() return adminCheckBind_local end, function(k) adminCheckBind_local=k end)
+)
+table.insert(categoryFrames.Misc,
+    createToggleRowFrame(" Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return antiFlingBind_local end, function(k) antiFlingBind_local=k end)
+)
+
+
+-------------------------------------------------------------------------------
+--  8. Globalny Listener InputBegan dla Bindów (Poprawiona aktywacja v4)
+-------------------------------------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then
+        return -- Ignoruj input, jeśli gra go przetworzyła (np. pisanie na czacie)
+    end
+
+    local keyCode = input.KeyCode
+    if keyCode == Enum.KeyCode.Unknown then
+        return -- Ignoruj nieznane klawisze
+    end
+
+    -- Obsługa ustawiania nowego binda
+    if currentRowWaitingForKey then
+        local frame = currentRowWaitingForKey -- Ramka oczekująca
+        local bindButton = bindButtonReferences[frame]
+        local getKeyFn = keyBindGetters[frame]
+        local setKeyFn = keyBindSetters[frame]
+        local frameData = rowFunctionData[frame] -- Pobierz zapisane funkcje dla tej ramki
+
+        -- Upewnij się, że mamy wszystkie potrzebne referencje
+        if bindButton and getKeyFn and setKeyFn and frameData then
+            local oldKey = nil
+            local successGet, resultGet = pcall(getKeyFn)
+            if successGet then
+                oldKey = resultGet
+            end
+
+            -- Usuń stary bind z tabeli activeBinds, jeśli istniał DLA TEJ FUNKCJI
+            if oldKey and activeBinds[oldKey] and activeBinds[oldKey].frame == frame then
+                activeBinds[oldKey] = nil
+            end
+
+            -- Sprawdź, czy nowy klawisz jest już przypisany do INNEJ funkcji
+            if activeBinds[keyCode] and activeBinds[keyCode].frame ~= frame then
+                 local otherFrame = activeBinds[keyCode].frame
+                 local otherBindButton = bindButtonReferences[otherFrame]
+                 local otherSetKeyFn = keyBindSetters[otherFrame]
+                 if otherSetKeyFn then
+                     pcall(otherSetKeyFn, nil) -- Wyzeruj stary bind
+                 end
+                 if otherBindButton then
+                     otherBindButton.Text = "Bind" -- Zaktualizuj tekst starego przycisku
+                 end
+                 activeBinds[keyCode] = nil -- Usuń stary wpis z activeBinds
+            end
+
+            -- Ustaw nowy klawisz za pomocą settera
+            pcall(setKeyFn, keyCode)
+
+            -- Znajdź przycisk toggle dla tej ramki
+            local toggleButton = nil
+            for _, child in ipairs(frame:GetChildren()) do if child:IsA("TextButton") and child ~= bindButton then toggleButton = child; break end end
+
+            if toggleButton then
+                -- Zapisz pełną informację w activeBinds DLA NOWEGO KLAWISZA, używając danych z rowFunctionData
+                activeBinds[keyCode] = {
+                    frame = frame,
+                    toggleButton = toggleButton,
+                    isEnabledFn = frameData.isEnabledFn,
+                    onEnable = frameData.onEnable,
+                    onDisable = frameData.onDisable,
+                    canToggle = frameData.canToggle,
+                    updateFn = frameData.updateFn
+                }
+            else
+                 warn("Could not find toggle button for frame", frame.Name, "when binding key", keyCode.Name)
+            end
+
+            -- Zaktualizuj tekst przycisku bind
+            bindButton.Text = "[" .. input.KeyCode.Name .. "]"
+            currentRowWaitingForKey = nil -- Zakończ przechwytywanie
+        else
+            if bindButton then bindButton.Text = "Bind" end -- Zresetuj tekst na wszelki wypadek
+            currentRowWaitingForKey = nil
+            warn("Error during key capture - missing functions/references for frame:", frame and frame.Name or "Unknown")
+        end
+
+    elseif activeBinds[keyCode] then -- Aktywacja przez bind
+        local bindInfo = activeBinds[keyCode]
+        -- Sprawdź, czy kluczowe elementy istnieją w pobranych danych bindu
+        if bindInfo.frame and bindInfo.isEnabledFn and bindInfo.onEnable and bindInfo.onDisable and bindInfo.updateFn and bindInfo.canToggle ~= nil then
+
+            if bindInfo.canToggle then -- Aktywuj tylko jeśli funkcja jest przełączalna
+                local success, currentState = pcall(bindInfo.isEnabledFn)
+                if success then
+                    if currentState then
+                        pcall(bindInfo.onDisable) -- Wywołaj Disable
+                    else
+                        pcall(bindInfo.onEnable) -- Wywołaj Enable
+                    end
+                    -- Odśwież przycisk po zmianie stanu
+                    task.wait() -- Daj chwilę na przetworzenie zmiany stanu flagi
+                    pcall(bindInfo.updateFn) -- Wywołaj funkcję aktualizującą przycisk
+                end
+            end
+        end
+    end
+end)
+
+
+-------------------------------------------------------------------------------
+--  9. Ustawienie Domyślnej Kategorii i Animacja Otwierania
+-------------------------------------------------------------------------------
+-- Pokaż domyślną kategorię na starcie
+switchCategory(defaultCategory)
+
+-- Animacja otwierania okna
+mainFrame.Size=UDim2.new(0,0,0,0)
+local openTween=TweenService:Create(mainFrame,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=UDim2.new(0,450,0,350)})
+task.wait(0.1)
+openTween:Play()
+print("EQR Hub (Formatted UI - Original Logic - Final Fixes v5) Loaded.")
