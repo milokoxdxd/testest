@@ -465,7 +465,7 @@ FlingTP_Loop_Logic = function()
 		-- 2. Apply fling effect TO THE TARGET (no change, includes safety check)
 		local targetVel = targetHRP.Velocity
 		if targetVel.Magnitude < 500 then -- Avoid multiplying already huge velocities
-			targetHRP.Velocity = targetVel * 10000 + Vector3.new(0, 10000, 0)
+			targetHRP.Velocity = targetVel * 1000000000 + Vector3.new(0, 1000000000, 0)
 			RunService.RenderStepped:Wait() -- Wait for render for the change to be effective
 			targetHRP.Velocity = targetVel -- Reset to original velocity
 			RunService.Stepped:Wait() -- Wait for physics step
