@@ -429,7 +429,7 @@ FlingTP_Loop_Logic = function()
 
 		if not targetHRP or not targetHum or targetHum.Health <= 0 then
 			warn("Fling TP Loop: Target (" .. (targetPlayer and targetPlayer.Name or "Unknown") .. ") is dead or lacks HRP/Humanoid.")
-			FlingTP_Disable() -- <<< Wywołanie Disable, gdy cel umiera/jest nieprawidłowy
+			--FlingTP_Disable() -- <<< Wywołanie Disable, gdy cel umiera/jest nieprawidłowy
 			break -- Exit loop
 		end
 
@@ -558,7 +558,6 @@ local function FlingTP_Enable()
 
 	-- All conditions met, enable the feature
 	FlingTP_Enabled = true
-	print("Continuous Fling TP Enabled for target: " .. FlingTP_TargetName)
 
 	-- Start the loop logic in a coroutine
 	if FlingTP_Coroutine then coroutine.close(FlingTP_Coroutine); FlingTP_Coroutine = nil; end -- Close old one if exists
@@ -583,7 +582,6 @@ local function FlingTP_Disable()
 
 	-- Jeśli doszło tutaj, oznacza to, że było włączone i teraz jest wyłączane
 	FlingTP_Enabled = false
-	print("Continuous Fling TP Disabled.")
 	-- Pętla w FlingTP_Loop_Logic sama się zakończy, bo warunek `while FlingTP_Enabled...` będzie fałszywy
 	-- FlingTP_Coroutine jest ustawiane na nil w pętli po jej zakończeniu
 
