@@ -927,8 +927,8 @@ local runAttackLoop do
 
     -- Bezpośredni dostęp do RemoteEvent/Function (jak w starym skrypcie - może generować błąd, jeśli nie istnieje!)
     -- Upewnij się, że ścieżki są poprawne dla Twojej gry!
-    local remote1 = game:GetService("ReplicatedStorage")
-    local remote2 = game:GetService("ReplicatedStorage")
+    local remote1 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
+    local remote2 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
     -- Alternatywnie, jeśli wiesz na 100%, że istnieją:
     -- local remote1 = game:GetService("ReplicatedStorage").Events["XMHH.2"]
     -- local remote2 = game:GetService("ReplicatedStorage").Events["XMHH2.2"]
@@ -1037,7 +1037,7 @@ local TPFarm_TargetName = "Type ALT account name.."
 local TPFarm_SteppedConnection = nil
 local TPFarm_RenderConnection = nil
 local TPFarm_CharConnection = nil
-local DeathRespawn_Event = game:GetService("ReplicatedStorage")
+local DeathRespawn_Event = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("DeathRespawn")
 
 -- Локальная функция, вызываемая при спавне персонажа (CharacterAdded) (Oryginalny komentarz)
 local function TPFarm_OnCharacterAdded(char)
