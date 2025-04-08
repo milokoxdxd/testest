@@ -230,7 +230,375 @@ end)
 --  4. Объявляем все переменные и функции скриптов (Oryginalny komentarz)
 --     ORYGINALNA LOGIKA FUNKCJI SKRYPTÓW (Formatowanie Wieloliniowe)
 -------------------------------------------------------------------------------
+--======================= Fling (z nowego skryptu) =========================--
+local FlingTP_TargetName = "Enter target nick..." -- Zmienna do przechowywania nazwy celu dla teleportacji przy Flingu
+local FlingTP_Enabled = false -- Nowa flaga stanu dla ciągłego Fling TP
+local FlingTP_Coroutine = nil -- Do przechowywania korutyny pętli Fling TP
+local FlingTP_Loop_Logic -- Deklaracja wstępna dla funkcji pętli
+local Fling_Enabled = false
+local Fling_Coroutine = nil
+local Fling_Function_Logic -- Deklaracja wstępna dla funkcji logiki
 
+-- Funkcja zawierająca główną logikę Fling
+Fling_Function_Logic = function()
+    -- Użyj globalnych serwisów zdefiniowanych na górze głównego skryptu
+	local lp = Players.LocalPlayer
+	local c, hrp, vel, movel = nil, nil, nil, 0.1
+
+	while Fling_Enabled do -- Używamy nowej zmiennej Fling_Enabled
+		RunService.Heartbeat:Wait() -- Użyj globalnego RunService
+		c = lp.Character
+		hrp = c and c:FindFirstChild("HumanoidRootPart")
+
+		if hrp then
+			vel = hrp.Velocity
+			hrp.Velocity = vel * 100000000 + Vector3.new(0, 100000000, 0)
+			RunService.RenderStepped:Wait()
+			hrp.Velocity = vel
+			RunService.Stepped:Wait()
+			hrp.Velocity = vel + Vector3.new(0, movel, 0)
+			movel = -movel
+		end
+	end
+end
+
+-- Funkcja włączająca Fling
+local function Fling_Enable()
+    if Fling_Enabled then return end
+    Fling_Enabled = true
+
+    -- Sprawdzenie i ewentualne utworzenie Decal (z oryginalnego skryptu Fling)
+    local ReplicatedStorage = game:GetService("ReplicatedStorage") -- Upewnij się, że RS jest dostępne
+    if not ReplicatedStorage:FindFirstChild("juisdfj0i32i0eidsuf0iok") then
+        local detection = Instance.new("Decal")
+        detection.Name = "juisdfj0i32i0eidsuf0iok"
+        detection.Parent = ReplicatedStorage
+    end
+
+    -- Uruchomienie logiki w nowej korutynie
+    if Fling_Coroutine then -- Upewnij się, że stara korutyna jest zakończona, jeśli istnieje
+         coroutine.close(Fling_Coroutine) -- Chociaż powinna sama się zakończyć przez flagę
+         Fling_Coroutine = nil
+    end
+    Fling_Coroutine = coroutine.create(Fling_Function_Logic)
+    coroutine.resume(Fling_Coroutine)
+end
+
+-- Funkcja wyłączająca Fling
+local function Fling_Disable()
+	-- Warunek zapobiegający wielokrotnemu wywołaniu
+	if not Fling_Enabled then return end
+
+	-- Wyłącz główny Fling
+	Fling_Enabled = false
+	-- Główna korutyna Flinga (jeśli istnieje) sama się zatrzyma przez zmianę flagi Fling_Enabled
+
+	-- === DODANA LOGIKA: Sprawdź i wyłącz Fling TP ===
+	if FlingTP_Enabled then -- Sprawdź, czy Fling TP jest aktualnie włączony
+		FlingTP_Disable() -- Wywołaj funkcję wyłączającą Fling TP
+		-- FlingTP_Disable() samo zajmie się ustawieniem FlingTP_Enabled = false
+		-- i próbą aktualizacji przycisku Fling TP do stanu OFF / czerwony.
+	end
+	-- === KONIEC DODANEJ LOGIKI ===
+
+	-- Aktualizacja przycisku GŁÓWNEGO Flinga (jeśli istnieje i jest potrzebna)
+    -- Ta część zależy od tego, jak zarządzasz aktualizacją przycisku Fling
+    -- Możliwe, że już jest obsługiwana przez globalny system bindów/przycisków
+	local flingFrame = nil
+	for k, v in pairs(activeBinds) do if v.onEnable == Fling_Enable then flingFrame = v.frame; break; end end
+	if not flingFrame and categoryFrames and categoryFrames.Fling then -- Fallback search
+		 for _, f in ipairs(categoryFrames.Fling) do
+              -- Znajdź ramkę dla przycisku 'Fling', może wymagać dostosowania nazwy
+              if f:FindFirstChild("TextLabel") and f.TextLabel.Text == " Fling" then
+                   flingFrame = f
+                   break
+              end
+         end
+	end
+	if flingFrame and rowFunctionData[flingFrame] and rowFunctionData[flingFrame].updateFn then
+		local success, err = pcall(rowFunctionData[flingFrame].updateFn)
+        if not success then warn("Fling Disable: Failed to update main Fling button visuals:", err) end
+    end
+
+end
+-- Funkcja teleportująca do celu, jeśli Fling jest aktywny
+local function TeleportToFlingTarget()
+	if not Fling_Enabled then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "You have to toggle ON Fling!",
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	if not FlingTP_TargetName or FlingTP_TargetName == "Enter target name..." or FlingTP_TargetName == "" then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "Enter target name'.",
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	local targetPlayer = Players:FindFirstChild(FlingTP_TargetName) -- Użyj globalnego serwisu Players
+	if not targetPlayer then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "Target player not found: " .. FlingTP_TargetName,
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	if targetPlayer == LocalPlayer then -- Użyj globalnego LocalPlayer
+         pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "You can't fling yourself.",
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	local localChar = LocalPlayer.Character
+	local targetChar = targetPlayer.Character
+	local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+	local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+
+	if localHRP and targetHRP then
+		localHRP.CFrame = targetHRP.CFrame -- Teleportacja DOKŁADNIE do pozycji celu
+	else
+		if not localHRP then end
+		if not targetHRP then end
+        pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "Error: Can't find target player.",
+				Duration = 4
+			})
+		end)
+	end
+end
+-- Główna pętla logiki dla ciągłego Fling TP (WERSJA Z OFFSETEM 1 STUD)
+-- Main logic loop for continuous Fling TP (2 Stud Offset version + English)
+FlingTP_Loop_Logic = function()
+	local flingTpMoveVel = 0.1 -- Local variable for the target's small fling up/down movement
+	local targetPlayer = nil -- Variable for the target player within this loop
+
+	-- Thresholds for movement detection (ADJUST runningThresholdMultiplier IF NEEDED)
+	local standingThreshold = 1.0 -- Velocity magnitude below this is considered standing still
+	local runningThresholdMultiplier = 2.5 -- Increased multiplier. Adjust if needed.
+
+	-- Loop runs as long as this mode is enabled AND the main Fling is enabled
+	while FlingTP_Enabled and Fling_Enabled do
+		RunService.Heartbeat:Wait() -- Wait a frame
+
+		-- Check if we have a valid target at the start of each iteration
+		if not targetPlayer or not targetPlayer:IsDescendantOf(Players) then -- If target disappeared or first iteration
+            if not FlingTP_TargetName or FlingTP_TargetName == "Enter target nick..." or FlingTP_TargetName == "Enter nickname..." or FlingTP_TargetName == "" then -- Check Polish and English placeholders
+				FlingTP_Disable() -- Disable if no target
+				break -- Exit loop
+			end
+			targetPlayer = Players:FindFirstChild(FlingTP_TargetName)
+			if not targetPlayer then
+				FlingTP_Disable() -- Disable if target not found
+				break -- Exit loop
+			end
+			-- print("Fling TP Loop: Target acquired: " .. targetPlayer.Name) -- Keep commented unless debugging
+		end
+
+		-- Get characters and HRPs (must be checked each iteration)
+		local localChar = LocalPlayer.Character
+		local targetChar = targetPlayer.Character
+		local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+		local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+		local targetHum = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
+
+		-- Check continuation conditions
+		if not localHRP then
+			continue -- Wait for respawn
+		end
+
+		if not targetHRP or not targetHum or targetHum.Health <= 0 then
+			warn("Fling TP Loop: Target (" .. (targetPlayer and targetPlayer.Name or "Unknown") .. ") is dead or lacks HRP/Humanoid.")
+			FlingTP_Disable() -- <<< Wywołanie Disable, gdy cel umiera/jest nieprawidłowy
+			break -- Exit loop
+		end
+
+		-- === DYNAMIC OFFSET CALCULATION (CORRECTED LOGIC ORDER) ===
+		local currentTargetVelocityMag = targetHRP.Velocity.Magnitude
+		local targetBaseWalkSpeed = targetHum.WalkSpeed
+		local dynamicOffsetDistance -- Declare variable
+
+		-- Check for RUNNING first (highest speed condition)
+		if currentTargetVelocityMag > targetBaseWalkSpeed * runningThresholdMultiplier then
+			dynamicOffsetDistance = 13 -- Assign RUNNING distance
+
+		-- Check for WALKING next (intermediate speed condition)
+		elseif currentTargetVelocityMag >= standingThreshold then
+			dynamicOffsetDistance = 8 -- Assign WALKING distance
+
+		-- Must be STANDING otherwise (lowest speed condition)
+		else
+			dynamicOffsetDistance = 1 -- Assign STANDING distance
+		end
+		-- === END OF DYNAMIC OFFSET CALCULATION ===
+
+
+		-- === TELEPORTATION LOGIC USING DYNAMIC OFFSET ===
+		-- 1. Teleport local player DYNAMICALLY IN FRONT of the target
+		local targetLookVector = targetHRP.CFrame.LookVector -- Direction the target is facing
+		local desiredPosition = targetHRP.Position + (targetLookVector * dynamicOffsetDistance) -- Calculate position using dynamic offset
+		-- Set CFrame to be at the new position, looking TOWARDS the target's position
+		local newCFrame = CFrame.new(desiredPosition, targetHRP.Position)
+		localHRP.CFrame = newCFrame
+		-- === END OF TELEPORTATION LOGIC ===
+
+		-- 2. Apply fling effect TO THE TARGET (no change, includes safety check)
+		local targetVel = targetHRP.Velocity
+		if targetVel.Magnitude < 500 then -- Avoid multiplying already huge velocities
+			targetHRP.Velocity = targetVel * 10000 + Vector3.new(0, 10000, 0)
+			RunService.RenderStepped:Wait() -- Wait for render for the change to be effective
+			targetHRP.Velocity = targetVel -- Reset to original velocity
+			RunService.Stepped:Wait() -- Wait for physics step
+			targetHRP.Velocity = targetVel + Vector3.new(0, flingTpMoveVel, 0) -- Small up/down movement
+			flingTpMoveVel = -flingTpMoveVel -- Reverse direction for the next iteration
+		else
+			RunService.Stepped:Wait() -- Still wait even if not applying force
+		end
+
+
+	end -- Koniec pętli while
+
+	-- === USUNIĘTY BLOK KODU ===
+	-- Poniższy blok został usunięty, ponieważ FlingTP_Disable() jest już wywoływane
+	-- w odpowiednich momentach (wewnątrz pętli lub przez użytkownika) i zawiera
+	-- warunek zapobiegający wielokrotnemu wykonaniu.
+	--[[
+	if FlingTP_Enabled then
+		FlingTP_Enabled = false
+		-- Might need to update the UI button here if createToggleRowFrame doesn't catch it
+		local frame = nil
+		-- Attempt to find the associated frame/button to update its visual state
+        for k, v in pairs(activeBinds) do if v.onEnable == FlingTP_Enable then frame = v.frame; break; end end
+        if not frame and categoryFrames and categoryFrames.Fling then -- Fallback search
+             for _, f in ipairs(categoryFrames.Fling) do if f.Name == "FlingTPToTarget" then frame = f; break; end end
+        end
+		if frame and rowFunctionData[frame] and rowFunctionData[frame].updateFn then
+			local success, err = pcall(rowFunctionData[frame].updateFn) -- Try to update the button visuals
+            if not success then warn("Fling TP Loop: Failed to update button visuals on loop end:", err) end
+        else
+             warn("Fling TP Loop: Could not find button frame or update function on loop end.")
+        end
+	end
+	]]--
+	-- === KONIEC USUNIĘTEGO BLOKU ===
+
+	FlingTP_Coroutine = nil -- Ustaw korutynę na nil po zakończeniu pętli
+end
+
+-- Function to enable continuous Fling TP (English version)
+local function FlingTP_Enable()
+	if FlingTP_Enabled then return end -- Already enabled
+
+	if not Fling_Enabled then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "You need to enable the main Fling first!",
+				Duration = 4
+			})
+		end)
+		return -- Don't enable because main Fling is off
+	end
+
+    -- Check both Polish and English placeholders, just in case
+	if not FlingTP_TargetName or FlingTP_TargetName == "Enter target nick..." or FlingTP_TargetName == "Enter nickname..." or FlingTP_TargetName == "" then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "Enter a target player name first.",
+				Duration = 4
+			})
+		end)
+		return -- Don't enable without a target
+	end
+
+	local targetPlayer = Players:FindFirstChild(FlingTP_TargetName)
+	if not targetPlayer then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "Target player not found: " .. FlingTP_TargetName,
+				Duration = 4
+			})
+		end)
+		return -- Don't enable if target doesn't exist
+	end
+
+    if targetPlayer == LocalPlayer then
+        pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "You cannot target yourself.",
+				Duration = 4
+			})
+		end)
+        return -- Don't enable if targeting self
+    end
+
+
+	-- All conditions met, enable the feature
+	FlingTP_Enabled = true
+	print("Continuous Fling TP Enabled for target: " .. FlingTP_TargetName)
+
+	-- Start the loop logic in a coroutine
+	if FlingTP_Coroutine then coroutine.close(FlingTP_Coroutine); FlingTP_Coroutine = nil; end -- Close old one if exists
+	FlingTP_Coroutine = coroutine.create(FlingTP_Loop_Logic)
+	coroutine.resume(FlingTP_Coroutine)
+    -- Explicitly update button visuals after enabling state
+    -- (This helps ensure the button shows "ON" immediately)
+     local frame = nil
+     for k, v in pairs(activeBinds) do if v.onEnable == FlingTP_Enable then frame = v.frame; break; end end
+      if not frame and categoryFrames and categoryFrames.Fling then -- Fallback search
+          for _, f in ipairs(categoryFrames.Fling) do if f.Name == "FlingTPToTarget" then frame = f; break; end end
+     end
+     if frame and rowFunctionData[frame] and rowFunctionData[frame].updateFn then
+          pcall(rowFunctionData[frame].updateFn)
+     end
+end
+
+-- Function to disable continuous Fling TP (English version)
+local function FlingTP_Disable()
+	-- !!! WAŻNY WARUNEK: Jeśli już jest wyłączone, nic nie rób !!! --
+	if not FlingTP_Enabled then return end -- Already disabled
+
+	-- Jeśli doszło tutaj, oznacza to, że było włączone i teraz jest wyłączane
+	FlingTP_Enabled = false
+	print("Continuous Fling TP Disabled.")
+	-- Pętla w FlingTP_Loop_Logic sama się zakończy, bo warunek `while FlingTP_Enabled...` będzie fałszywy
+	-- FlingTP_Coroutine jest ustawiane na nil w pętli po jej zakończeniu
+
+	-- Explicitly update button visuals after disabling state
+	local frame = nil
+	-- Attempt to find the associated frame/button to update its visual state
+	for k, v in pairs(activeBinds) do if v.onEnable == FlingTP_Enable then frame = v.frame; break; end end
+	if not frame and categoryFrames and categoryFrames.Fling then -- Fallback search
+		 for _, f in ipairs(categoryFrames.Fling) do if f.Name == "FlingTPToTarget" then frame = f; break; end end
+	end
+	if frame and rowFunctionData[frame] and rowFunctionData[frame].updateFn then
+		local success, err = pcall(rowFunctionData[frame].updateFn) -- Try to update the button visuals
+		if not success then end
+	end
+end
 --============================ Fly ============================--
 local Fly_Enabled = false
 local Fly_Bind = nil
@@ -419,8 +787,6 @@ local function kickWithStaffInfo(staffInfo)
     -- Użyj globalnego LocalPlayer zamiast lokalnego 'Player' z Twojego kodu
     if LocalPlayer then
         LocalPlayer:Kick("Staff joined\n\n" .. kickMsg)
-    else
-        warn("AdminCheck: LocalPlayer not found!")
     end
 end
 
@@ -482,14 +848,14 @@ local function AdminCheck_Enable()
     -- przycisk powinien od razu pokazać stan "ON".
     -- Jeśli nie, musiałbyś dodać tutaj kod ręcznie aktualizujący przycisk.
 
-    print("Admin Check (Your Version) Enabling...")
+    print("Admin Check v2.1 Enabling...")
 
     -- Rozłącz stare połączenie jeśli istnieje
     if AdminCheck_Connection then AdminCheck_Connection:Disconnect() end
 
     -- Podłącz listener PlayerAdded (to jest szybkie)
     AdminCheck_Connection = Players.PlayerAdded:Connect(onPlayerJoining)
-    print("Admin Check (Your Version) Monitoring started.")
+    print("Admin Check 2.1 Monitoring started.")
 
     -- Wyślij powiadomienie (to też jest szybkie)
     pcall(function()
@@ -530,7 +896,7 @@ local function AdminCheck_Disable()
         AdminCheck_Connection:Disconnect()
         AdminCheck_Connection = nil
     end
-    print("Admin Check (Your Version) Disabled.")
+    print("Admin Check 2.1 Disabled.")
 end
 
 -- Opcjonalne uruchomienie domyślne (jeśli chcesz, aby startował włączony)
@@ -561,8 +927,8 @@ local runAttackLoop do
 
     -- Bezpośredni dostęp do RemoteEvent/Function (jak w starym skrypcie - może generować błąd, jeśli nie istnieje!)
     -- Upewnij się, że ścieżki są poprawne dla Twojej gry!
-    local remote1 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH.2")
-    local remote2 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
+    local remote1 = game:GetService("ReplicatedStorage")
+    local remote2 = game:GetService("ReplicatedStorage")
     -- Alternatywnie, jeśli wiesz na 100%, że istnieją:
     -- local remote1 = game:GetService("ReplicatedStorage").Events["XMHH.2"]
     -- local remote2 = game:GetService("ReplicatedStorage").Events["XMHH2.2"]
@@ -671,7 +1037,7 @@ local TPFarm_TargetName = "Type ALT account name.."
 local TPFarm_SteppedConnection = nil
 local TPFarm_RenderConnection = nil
 local TPFarm_CharConnection = nil
-local DeathRespawn_Event = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("DeathRespawn")
+local DeathRespawn_Event = game:GetService("ReplicatedStorage")
 
 -- Локальная функция, вызываемая при спавне персонажа (CharacterAdded) (Oryginalny komentarz)
 local function TPFarm_OnCharacterAdded(char)
@@ -1178,105 +1544,323 @@ local function InfiniteStamina_Disable()
     isInfiniteStaminaEnabled = false
 end
 
+--======================= INVISIBILITY (Corrected for Reset Errors) =========================--
+local Invis_Fixed = true -- Flag to indicate the corrected version is used
 
---======================= INVISIBILITY (Original Logic, Reverted Disable) =========================--
-InvisEnabled = false -- Zadeklaruj globalnie
-
-local Invis_Do_Block = true
-do
+do -- Use a 'do' block to scope variables specific to invisibility
     repeat task.wait() until game:IsLoaded();
+
     local cloneref = cloneref or function(...) return ... end;
-    local Service = setmetatable({}, { __index = function(_, k) local s,r=pcall(function() return cloneref(game:GetService(k)) end); return s and r end })
-    local Plrs_invis = Service.Players; local CoreGui_invis = Service.CoreGui; local RunSvc_invis = Service.RunService; local UserInputSvc_invis = Service.UserInputService; local Workspace_invis = Service.Workspace;
-    if not Plrs_invis then warn("Invis: Players service not found."); return end;
-    local Player_invis = Plrs_invis.LocalPlayer; if not Player_invis then warn("Invis: LocalPlayer not found."); return end;
-    local Character_invis = Player_invis.Character or Player_invis.CharacterAdded:Wait();
-    local HumanoidRootPart_invis = Character_invis:WaitForChild("HumanoidRootPart", 5);
-    local Humanoid_invis = Character_invis:WaitForChild("Humanoid", 5);
-    if not HumanoidRootPart_invis or not Humanoid_invis then warn("Invis: Failed to get HRP or Humanoid."); return end;
-    Player_invis.CharacterAdded:Connect(function(NewCharacter) Character_invis=NewCharacter; HumanoidRootPart_invis=Character_invis:WaitForChild("HumanoidRootPart",5); Humanoid_invis=Character_invis:WaitForChild("Humanoid",5); if not HumanoidRootPart_invis or not Humanoid_invis then warn("Invis: Failed to get HRP or Humanoid on respawn.") end end);
-    if not Character_invis:FindFirstChild("Torso") then pcall(function() local StarterGui=Service.StarterGui or game:GetService("StarterGui"); if StarterGui then StarterGui:SetCore("SendNotification",{Title="FAILED",Text="Must be R6",Duration=5}) end end) end;
-    local function Grounded_invis() return Humanoid_invis and Humanoid_invis.Parent and Humanoid_invis.FloorMaterial~=Enum.Material.Air; end;
-    -- Usunięto lokalną deklarację InvisEnabled, używamy globalnej
-    local Heartbeat_invis = RunSvc_invis and RunSvc_invis.Heartbeat; local RenderStepped_invis = RunSvc_invis and RunSvc_invis.RenderStepped;
-    if not Heartbeat_invis or not RenderStepped_invis then warn("Invis: RunService events not found."); return end;
-    local GUI_invis = nil; local WarnLabel_invis = nil;
-    if CoreGui_invis then GUI_invis=Instance.new("ScreenGui"); GUI_invis.Name="WarningGUI"; GUI_invis.Parent=CoreGui_invis; WarnLabel_invis=Instance.new("TextLabel",GUI_invis); WarnLabel_invis.Text="⚠️You are visible⚠️"; WarnLabel_invis.Visible=false; WarnLabel_invis.Position=UDim2.new(0.5,0,0.75,0); WarnLabel_invis.AnchorPoint=Vector2.new(0.5,0); WarnLabel_invis.BackgroundTransparency=1; WarnLabel_invis.TextSize=32; WarnLabel_invis.TextColor3=Color3.fromRGB(190,190,190); WarnLabel_invis.Font=Enum.Font.SourceSansBold; else warn("Invis: CoreGui service not found, cannot create WarningLabel.") end;
-    local originalCameraSubject = nil;
 
-    -- Definicje funkcji lokalnych w bloku 'do'
-    local function Invis_Enable_Local()
-        if InvisEnabled then return end;
-        if not Humanoid_invis or not HumanoidRootPart_invis or not Workspace_invis or not Workspace_invis.CurrentCamera then warn("Invis: Cannot enable, missing components."); return end;
-        InvisEnabled=true; originalCameraSubject=Workspace_invis.CurrentCamera.CameraSubject; Workspace_invis.CurrentCamera.CameraSubject=HumanoidRootPart_invis;
-    end;
-    local function Invis_Disable_Local()
-        if not InvisEnabled then return end;
-        InvisEnabled=false;
-        if Workspace_invis and Workspace_invis.CurrentCamera and originalCameraSubject then Workspace_invis.CurrentCamera.CameraSubject=originalCameraSubject; originalCameraSubject=nil; end;
-        if WarnLabel_invis then WarnLabel_invis.Visible=false; end;
-        -- Reset przezroczystości obsługiwany przez Heartbeat
-    end;
+    local Service = setmetatable({}, {
+        __index = function(_, k)
+            return cloneref(game:GetService(k));
+        end
+    });
 
-    -- Przypisanie do globalnych referencji, aby przycisk działał
-    Invis_Enable = Invis_Enable_Local
-    Invis_Disable = Invis_Disable_Local
+    local Player: Player = Service.Players.LocalPlayer; -- Use Service table
+    local Character: Model = Player.Character or Player.CharacterAdded:Wait();
+    local Humanoid: Humanoid
+    local HumanoidRootPart: BasePart
 
-    -- Pętla Heartbeat
-    Heartbeat_invis:Connect(function(_)
-        if not Character_invis or not Character_invis.Parent or not Humanoid_invis or not HumanoidRootPart_invis or not Workspace_invis or not Workspace_invis.CurrentCamera then
-            if InvisEnabled then
-                pcall(Invis_Disable) -- Bezpieczne wywołanie disable
+    local function UpdateCharacterReferences()
+        Character = Player.Character
+        if Character then
+            HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+            Humanoid = Character:FindFirstChildOfClass("Humanoid")
+        else
+            HumanoidRootPart = nil
+            Humanoid = nil
+        end
+    end
+
+    UpdateCharacterReferences() -- Initial call
+
+    local InvisEnabled = false; -- Invisibility is disabled by default
+    local Track = nil -- Variable to hold the AnimationTrack
+    local Animation = Instance.new("Animation"); -- Create Animation instance once
+    Animation.AnimationId = "rbxassetid://215384594"; -- Set AnimationId once
+
+    local RunService: RunService = Service.RunService;
+    local Heartbeat = RunService.Heartbeat;
+    local RenderStepped = RunService.RenderStepped;
+
+    local UserInputService: UserInputService = Service.UserInputService;
+    local CoreGui: CoreGui = Service.CoreGui; -- Use Service table
+    local StarterGui: StarterGui = Service.StarterGui; -- Use Service table
+
+    -- Check for R6 (do this once after initial character load)
+    if Character and not Character:FindFirstChild("Torso") then
+        pcall(function() -- Use pcall for safety
+            StarterGui:SetCore("SendNotification", {
+                Title = "Invisibility FAILED",
+                Text = "Feature requires R6 Avatar.",
+                Duration = 5,
+            });
+        end)
+        -- We don't 'return' here in the global scope, just prevent the feature from enabling later if needed.
+        -- Or, set a flag to prevent enable/disable functions from working.
+        Invis_Fixed = false -- Mark as incompatible
+    end
+
+    -- GUI for warning message
+    local GUI = Instance.new("ScreenGui");
+    GUI.Name = "InvisWarningGUI";
+    GUI.Parent = CoreGui; -- Parent to CoreGui
+    GUI.ResetOnSpawn = false;
+    GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
+
+    local WarnLabel = Instance.new("TextLabel", GUI);
+    WarnLabel.Text = "⚠️You are visible⚠️";
+    WarnLabel.Visible = false;
+    WarnLabel.Size = UDim2.new(0, 200, 0, 30); -- Fixed size
+    WarnLabel.Position = UDim2.new(0.5, -100, 0.85, 0); -- Centered, slightly higher
+    WarnLabel.BackgroundTransparency = 1;
+    WarnLabel.Font = Enum.Font.GothamSemibold;
+    WarnLabel.TextSize = 24; -- Adjusted size
+    WarnLabel.TextColor3 = Color3.fromRGB(255, 255, 0); -- Yellow warning color
+    WarnLabel.TextStrokeTransparency = 0.5;
+    WarnLabel.ZIndex = 10; -- Ensure it's visible
+
+
+    local function Grounded()
+        -- Check if Humanoid exists and is part of the workspace before checking FloorMaterial
+        return Humanoid and Humanoid:IsDescendantOf(workspace) and Humanoid.FloorMaterial ~= Enum.Material.Air;
+    end
+
+    local function LoadAndPrepareTrack()
+        if Track then -- Stop existing track if it exists
+             pcall(function() Track:Stop() end)
+             Track = nil
+        end
+        if Humanoid then -- Ensure Humanoid is valid
+            local success, result = pcall(function()
+                return Humanoid:LoadAnimation(Animation)
+            end)
+            if success then
+                Track = result
+                Track.Priority = Enum.AnimationPriority.Action4;
+            else
+                Track = nil -- Ensure track is nil if loading failed
             end
+        else
+             Track = nil
+        end
+    end
+
+    local function Invis_Disable()
+        if not InvisEnabled then return end -- Already disabled
+        InvisEnabled = false;
+
+        if Track then -- Stop the animation if it exists and is playing
+             pcall(function() Track:Stop() end)
+             -- Track = nil -- Keep track loaded unless character changes
+        end
+
+        -- Restore camera subject only if Humanoid is valid
+        if Humanoid then
+            workspace.CurrentCamera.CameraSubject = Humanoid;
+        end
+
+        -- Reset transparency (check if Character is valid)
+        if Character then
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA("BasePart") and v.Transparency == 0.5 then
+                    v.Transparency = 0;
+                end
+            end
+        end
+
+        WarnLabel.Visible = false; -- Hide warning label
+    end
+
+    local function Invis_Enable()
+        if InvisEnabled or not Invis_Fixed then return end -- Already enabled or incompatible (R15)
+
+        -- Ensure character references are up-to-date and valid
+        UpdateCharacterReferences()
+        if not Character or not Humanoid or not HumanoidRootPart then
+             return
+        end
+        if not Character:FindFirstChild("Torso") then -- Double check for R6
+            pcall(function() StarterGui:SetCore("SendNotification", {Title = "Invisibility FAILED", Text = "Feature requires R6 Avatar.", Duration = 5}) end)
             return
         end
 
-        if not InvisEnabled then -- Czytaj GLOBALNĄ flagę
-            for _, v in ipairs(Character_invis:GetDescendants()) do
-                if v:IsA("BasePart") and v.Transparency == 0.5 then
-                    v.Transparency = 0; -- Przywróć normalną przezroczystość
-                end
-            end
-            if WarnLabel_invis then
-                WarnLabel_invis.Visible = false
-            end
-            return; -- Zakończ, jeśli wyłączone
+
+        InvisEnabled = true;
+        workspace.CurrentCamera.CameraSubject = HumanoidRootPart; -- Change camera subject
+
+        LoadAndPrepareTrack() -- Load/Reload the animation track
+
+    end
+
+    -- Handle character changes
+    Player.CharacterAdded:Connect(function(NewCharacter)
+        -- Stop old track if necessary
+        if Track then
+            pcall(function() Track:Stop() end)
+            Track = nil
         end
 
-        -- Logika, gdy włączone...
-        if WarnLabel_invis then
-            WarnLabel_invis.Visible = not Grounded_invis();
+        -- Poczekaj bardzo krótko, aby dać czas na załadowanie podstawowych elementów
+        task.wait() -- Daje silnikowi jeden cykl na aktualizację
+
+        UpdateCharacterReferences() -- Update refs to the new character
+
+        -- SPRAWDZENIE R6/R15 - Najpierw upewnij się, że Humanoid istnieje
+        if not Humanoid then
+             -- Można dodać dłuższe oczekiwanie, jeśli Humanoid pojawia się z opóźnieniem
+             task.wait(0.5) -- Dodatkowe oczekiwanie
+             UpdateCharacterReferences() -- Spróbuj ponownie
+             if not Humanoid then
+                  -- Zdecyduj co robić - na razie zablokujemy, aby uniknąć błędów
+                  Invis_Fixed = false
+                  if InvisEnabled then Invis_Disable() end
+                  pcall(function() StarterGui:SetCore("SendNotification", {Title = "Invisibility Error", Text = "Could not verify character type.", Duration = 5}) end)
+                  return
+             end
         end
-        local CF=CFrame;
-        local _, y=Workspace_invis.CurrentCamera.CFrame:ToOrientation();
-        HumanoidRootPart_invis.CFrame=CF.new(HumanoidRootPart_invis.CFrame.Position)*CF.fromOrientation(0,y,0);
-        local OldCFrame=HumanoidRootPart_invis.CFrame;
-        local OldCameraOffset=Humanoid_invis.CameraOffset;
-        HumanoidRootPart_invis.CFrame=HumanoidRootPart_invis.CFrame*CF.Angles(math.rad(90),0,0);
-        Humanoid_invis.CameraOffset=Vector3.new(0,1.44,0);
-        local Track=nil;
-        local animSuccess, animResult=pcall(function()
-            local Animation=Instance.new("Animation"); Animation.AnimationId="rbxassetid://215384594";
-            Track=Humanoid_invis:LoadAnimation(Animation);
-            Track.Priority=Enum.AnimationPriority.Action4;
-            Track:Play(); Track:AdjustSpeed(0); Track.TimePosition=0.3;
-        end);
-        if not animSuccess then warn("Invis: Animation failed - ", animResult) end;
-        RenderStepped_invis:Wait();
-        Humanoid_invis.CameraOffset=OldCameraOffset;
-        HumanoidRootPart_invis.CFrame=OldCFrame;
-        if Track then Track:Stop(); Track:Destroy() end;
-        local LookVector=Workspace_invis.CurrentCamera.CFrame.LookVector;
-        local Horizontal=Vector3.new(LookVector.X,0,LookVector.Z).Unit;
-        local TargetCFrame=CFrame.new(HumanoidRootPart_invis.Position, HumanoidRootPart_invis.Position+Horizontal);
-        HumanoidRootPart_invis.CFrame=TargetCFrame;
-        for i, v in ipairs(Character_invis:GetDescendants()) do
-            if (v:IsA("BasePart") and v.Transparency~=1) then
-                v.Transparency=0.5;
+
+        -- Teraz sprawdź RigType
+        if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then
+            Invis_Fixed = false
+            if InvisEnabled then Invis_Disable() end -- Disable if it was active
+            pcall(function() StarterGui:SetCore("SendNotification", {Title = "Invisibility Warning", Text = "Non-R6 Avatar detected (".. tostring(Humanoid.RigType) .."). Invisibility disabled.", Duration = 5}) end)
+            return
+        else
+            -- Wygląda na to, że jest R6
+            Invis_Fixed = true -- Mark as compatible again
+        end
+
+        -- Jeśli niewidzialność ma przetrwać respawn, włącz ją ponownie
+        if InvisEnabled then
+            if HumanoidRootPart then -- Upewnij się, że HRP istnieje przed zmianą kamery
+                 workspace.CurrentCamera.CameraSubject = HumanoidRootPart -- Ensure camera subject is correct
+            else
+                 -- Można spróbować poczekać na HRP lub zrezygnować z ustawiania kamery
             end
+            LoadAndPrepareTrack() -- Załaduj animację na nowy humanoid
+            -- Pętla Heartbeat zajmie się resztą
         end
-    end);
-end -- Koniec bloku 'do' dla Invisibility
+    end)
+
+    Player.CharacterRemoving:Connect(function(OldCharacter)
+         if Track then
+             pcall(function() Track:Stop() end)
+             Track = nil
+         end
+         -- Don't disable InvisEnabled here, let CharacterAdded handle re-enabling if needed
+         WarnLabel.Visible = false -- Hide warning as character is gone
+    end)
+
+
+    -- Main loop
+    Heartbeat:Connect(function(_)
+        -- Early exit conditions
+        if not InvisEnabled or not Invis_Fixed then
+            -- Ensure transparency is reset if script disabled unexpectedly while parts were transparent
+            if not InvisEnabled and Character then
+                 for _, v in pairs(Character:GetDescendants()) do
+                      if v:IsA("BasePart") and v.Transparency == 0.5 then v.Transparency = 0 end
+                 end
+            end
+            WarnLabel.Visible = false -- Keep label hidden if not active
+            return;
+        end
+
+        -- Check character validity *inside* the loop - CRITICAL for reset safety
+        if not Character or not Humanoid or not HumanoidRootPart or not Humanoid:IsDescendantOf(workspace) or Humanoid.Health <= 0 then
+            WarnLabel.Visible = false; -- Hide warning if character is invalid/dead
+            -- Don't disable InvisEnabled here, CharacterAdded/Removing handles state persistence
+            return
+        end
+
+        -- Grounded check and warning label
+        WarnLabel.Visible = not Grounded();
+
+        -- Store originals
+        local OldCFrame = HumanoidRootPart.CFrame;
+        local OldCameraOffset = Humanoid.CameraOffset;
+
+        -- Apply transformations
+        local _, y = workspace.CurrentCamera.CFrame:ToOrientation();
+        HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.CFrame.Position) * CFrame.fromOrientation(0, y, 0);
+        HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90), 0, 0);
+        Humanoid.CameraOffset = Vector3.new(0, 1.44, 0);
+
+        -- Play/Adjust Animation Track (Check if Track is valid!)
+        if Track then
+            local successPlay, errPlay = pcall(function()
+                if not Track.IsPlaying then
+                     Track:Play();
+                end
+                 Track:AdjustSpeed(0);
+                 Track.TimePosition = 0.3;
+            end)
+             if not successPlay then
+                 -- Attempt to reload track if it seems broken
+                 LoadAndPrepareTrack()
+             end
+        elseif Humanoid and Humanoid.Health > 0 then -- Attempt to load if missing and alive
+             LoadAndPrepareTrack()
+        end
+
+        -- Wait for render
+        RenderStepped:Wait();
+
+        -- Revert transformations (check validity again just in case)
+        if Humanoid and Humanoid:IsDescendantOf(workspace) then
+             Humanoid.CameraOffset = OldCameraOffset;
+        end
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+             HumanoidRootPart.CFrame = OldCFrame;
+        end
+
+        -- Stop animation track (Check if Track is valid!)
+        if Track then
+            local successStop, errStop = pcall(function() Track:Stop() end)
+             if not successStop then
+             end
+        end
+
+        -- Re-orient character to camera
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+             local LookVector = workspace.CurrentCamera.CFrame.LookVector;
+             local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z).Unit;
+             if Horizontal.Magnitude > 0.1 then -- Avoid setting to NaN if looking straight up/down
+                 local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal);
+                 HumanoidRootPart.CFrame = TargetCFrame;
+             end
+        end
+
+        -- Apply transparency (Check Character validity)
+        if Character then
+             for _, v in pairs(Character:GetDescendants()) do
+                 if (v:IsA("BasePart") and v.Transparency ~= 1) then
+                     v.Transparency = 0.5;
+                 end
+             end
+        end
+    end)
+
+    -- Expose Enable/Disable functions globally if needed by the UI
+    -- These need to be defined *after* the internal functions they call
+    _G.Invis_Enable = Invis_Enable -- Or use the method your UI framework expects
+    _G.Invis_Disable = Invis_Disable
+    _G.IsInvisEnabled = function() return InvisEnabled end -- Function for UI state checking
+
+end -- End of invisibility 'do' block
+-------------------------------------------------------------------------------
+
+--[[
+Remember to replace the Invisibility entry in your UI creation section (categoryFrames.Visuals)
+to use these corrected functions, for example:
+
+table.insert(categoryFrames.Visuals,
+    createToggleRowFrame(" Invisibility", true, _G.IsInvisEnabled, _G.Invis_Enable, _G.Invis_Disable, function() return invisBind_local end, function(k) invisBind_local=k end)
+)
+]]
 
 
 --================= 3 Save-Places =================--
@@ -1429,7 +2013,7 @@ function ESP_Enable()
     if ESP_Loading or ESP_Enabled then return end;
     ESP_Loading=true;
     local success, err=pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/EQResp", true))();
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/milokoxdxd/testest/refs/heads/main/widocznośćprzezściany", true))();
         ESP_Enabled=true;
         ESP_Loading=false
     end);
@@ -1545,7 +2129,7 @@ local function createToggleRowFrame(scriptName, canToggle, isEnabledFn, onEnable
             if success then enabledState = result else warn("Error in isEnabledFn for", scriptName, ":", result) end
         else warn("isEnabledFn is not a function for", scriptName) end
 
-        if scriptName == " Invisibility" then print("[DEBUG] updateToggleButtonVisuals called for Invisibility. InvisEnabled:", InvisEnabled, "Calculated enabledState:", enabledState) end
+        if scriptName == " Invisibility" then end
 
         local targetColor
         if not canToggle then toggleButton.Text = "RUN"; targetColor = Color3.fromRGB(80, 120, 220);
@@ -1734,12 +2318,144 @@ local function createTPFarmTargetRowFrame()
     end)
     return frame
 end
+-- Funkcja tworząca wiersz dla celu teleportacji przy Flingu
+local function createFlingTPTargetRowFrame()
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -20, 0, 35)
+	frame.BackgroundTransparency = 1
+	frame.Name = "FlingTPTarget"
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.4, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = "  TP Target:" -- Możesz zmienić tekst
+	label.TextColor3 = buttonTextColor
+	label.Font = Enum.Font.GothamSemibold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = frame
+
+	local inputContainer = Instance.new("Frame")
+	inputContainer.Size = UDim2.new(0.6, -5, 0.8, 0)
+	inputContainer.Position = UDim2.new(0.4, 5, 0.1, 0)
+	inputContainer.BackgroundColor3 = buttonColor
+	inputContainer.BorderSizePixel = 0
+	inputContainer.Parent = frame
+
+	local inputCorner = Instance.new("UICorner")
+	inputCorner.CornerRadius = UDim.new(0, 6)
+	inputCorner.Parent = inputContainer
+	local inputStroke = Instance.new("UIStroke")
+	inputStroke.Color = buttonStrokeColor
+	inputStroke.Thickness = 1
+	inputStroke.Parent = inputContainer
+
+	local input = Instance.new("TextBox")
+	input.Size = UDim2.new(1, -10, 1, -4)
+	input.Position = UDim2.new(0, 5, 0, 2)
+	input.BackgroundTransparency = 1
+	input.TextColor3 = Color3.new(1, 1, 1)
+	input.Font = Enum.Font.Gotham
+	input.TextSize = 12
+	input.Text = FlingTP_TargetName -- Użyj nowej zmiennej
+	input.PlaceholderText = "Enter target nick..." -- Możesz zmienić tekst
+	input.ClearTextOnFocus = false
+	input.Parent = inputContainer
+
+	input.FocusLost:Connect(function(enterPressed)
+		if input.Text ~= "" then
+			FlingTP_TargetName = input.Text -- Aktualizuj nową zmienną
+		else
+			FlingTP_TargetName = "Enter target nick..." -- Resetuj, jeśli puste
+			input.Text = FlingTP_TargetName -- Aktualizuj też pole tekstowe
+		end
+	end)
+
+	inputContainer.MouseEnter:Connect(function()
+		TweenService:Create(inputContainer, TweenInfo.new(0.1), { BackgroundColor3 = buttonHoverColor }):Play()
+	end)
+	inputContainer.MouseLeave:Connect(function()
+		TweenService:Create(inputContainer, TweenInfo.new(0.1), { BackgroundColor3 = buttonColor }):Play()
+	end)
+	return frame
+end
+-- Funkcja tworząca wiersz z przyciskiem akcji
+local function createActionButtonFrame(labelText, buttonText, actionFunction)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -20, 0, 35)
+	frame.BackgroundTransparency = 1
+	frame.Name = labelText:gsub("%s+", "") .. "Action"
+
+	local horizontalLayout = Instance.new("UIListLayout")
+	horizontalLayout.FillDirection = Enum.FillDirection.Horizontal
+	horizontalLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	horizontalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	horizontalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	horizontalLayout.Padding = UDim.new(0, 10) -- Dostosuj padding
+	horizontalLayout.Parent = frame
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.45, 0, 1, 0) -- Dostosuj szerokość labelki
+	label.BackgroundTransparency = 1
+	label.Text = " " .. labelText
+	label.TextColor3 = buttonTextColor
+	label.Font = Enum.Font.GothamSemibold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.LayoutOrder = 1
+	label.Parent = frame
+
+	local actionButton = Instance.new("TextButton")
+	actionButton.Size = UDim2.new(0.5, 0, 0.8, 0) -- Dostosuj szerokość przycisku
+	actionButton.Font = Enum.Font.GothamBold
+	actionButton.TextSize = 12
+	actionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	actionButton.Text = buttonText
+	actionButton.BackgroundColor3 = buttonColor -- Kolor jak toggle OFF
+	actionButton.BorderSizePixel = 0
+	actionButton.AutoButtonColor = false
+	actionButton.LayoutOrder = 2
+	actionButton.Parent = frame
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = actionButton
+	local btnStroke = Instance.new("UIStroke")
+	btnStroke.Color = buttonStrokeColor
+	btnStroke.Thickness = 1
+	btnStroke.Parent = actionButton
+
+	-- Logika hover
+	actionButton.MouseEnter:Connect(function()
+		TweenService:Create(actionButton, TweenInfo.new(0.1), { BackgroundColor3 = buttonHoverColor }):Play()
+	end)
+	actionButton.MouseLeave:Connect(function()
+		TweenService:Create(actionButton, TweenInfo.new(0.1), { BackgroundColor3 = buttonColor }):Play()
+	end)
+
+	-- Logika kliknięcia
+	actionButton.MouseButton1Click:Connect(function()
+		if actionFunction and typeof(actionFunction) == 'function' then
+			local success, err = pcall(actionFunction) -- Bezpieczne wywołanie funkcji akcji
+            if not success then
+                 warn("Error in action button function for '"..labelText.."':", err)
+            end
+            -- Opcjonalna zmiana wyglądu po kliknięciu, np. chwilowa zmiana koloru
+            local originalColor = actionButton.BackgroundColor3
+            actionButton.BackgroundColor3 = buttonOnColor -- Chwilowo zielony
+            task.wait(0.2)
+            actionButton.BackgroundColor3 = originalColor -- Powrót do normalnego
+		end
+	end)
+
+	return frame
+end
 
 
 -------------------------------------------------------------------------------
 --  6. Definicje Kategorii i Tworzenie Przycisków Kategorii
 -------------------------------------------------------------------------------
-local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc" }
+local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc", "Fling" }
 local categoryButtons = {}
 local categoryFrames = {} -- Tabela przechowująca ramki dla każdej kategorii
 local activeCategoryButton = nil
@@ -1838,6 +2554,8 @@ end
 
 -- Lokalne zmienne do przechowywania wartości bindów (dla getterów/setterów)
 local flyBind_local=Fly_Bind
+local flingTpBind_local = nil -- Bind dla przełącznika Fling TP
+local flingBind_local = nil
 local adminCheckBind_local=nil
 local meleeBind_local=nil
 local tpBind_local=nil
@@ -1877,8 +2595,8 @@ table.insert(categoryFrames.Visuals,
     createToggleRowFrame(" Wallhack", true, function() return ESP_Enabled end, ESP_Enable, ESP_Disable, function() return espBind_local end, function(k) espBind_local=k end)
 )
 table.insert(categoryFrames.Visuals,
-    createToggleRowFrame(" Invisibility", true, function() return InvisEnabled end, Invis_Enable, Invis_Disable, function() return invisBind_local end, function(k) invisBind_local=k end)
-)
+    createToggleRowFrame(" Invisibility", true, _G.IsInvisEnabled, _G.Invis_Enable, _G.Invis_Disable, function() return invisBind_local end, function(k) invisBind_local=k end)
+) -- Używa funkcji z _G
 
 -- Teleport Category
 table.insert(categoryFrames.Farming,
@@ -1904,8 +2622,15 @@ table.insert(categoryFrames.Misc,
 table.insert(categoryFrames.Misc,
     createToggleRowFrame(" Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return antiFlingBind_local end, function(k) antiFlingBind_local=k end)
 )
-
-
+-- Fling Category
+table.insert(categoryFrames.Fling,
+    createToggleRowFrame(" Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return flingBind_local end, function(k) flingBind_local=k end)
+)
+-- ZASTĄP POPRZEDNIE DWIE LINIE (createFlingTPTargetRowFrame i createActionButtonFrame) PONIŻSZYMI DWIEMA:
+table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole tekstowe na nick (pozostaje bez zmian)
+table.insert(categoryFrames.Fling,
+    createToggleRowFrame(" Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return flingTpBind_local end, function(k) flingTpBind_local=k end)
+) -- Teraz jest to PRZEŁĄCZNIK (toggle), który uruchamia/zatrzymuje pętlę
 -------------------------------------------------------------------------------
 --  8. Globalny Listener InputBegan dla Bindów (Poprawiona aktywacja v4)
 -------------------------------------------------------------------------------
