@@ -597,6 +597,137 @@ local function FlingTP_Disable()
 		if not success then end
 	end
 end
+-------------------------------------------------------------------------------
+-- Block for: Auto Pickup Money (Add this with other function definitions)
+-------------------------------------------------------------------------------
+
+--[[ NOTE: This feature assumes global 'Settings' and 'CoolDowns' tables exist
+     with the required structure (Settings.IsDead, CoolDowns.AutoPickUps.MoneyCooldown)
+     Ensure these are defined elsewhere in your main script. ]]
+
+local AutoPickupMoney_Enabled = false
+local AutoPickupMoney_Connection = nil
+local AutoPickupMoney_Coroutine = nil -- To manage the coroutine itself
+
+-- Placeholder for CoolDowns if not defined globally yet (REMOVE if defined globally)
+-- local CoolDowns = { AutoPickUps = { MoneyCooldown = false } }
+-- Placeholder for Settings if not defined globally yet (REMOVE if defined globally)
+-- local Settings = { IsDead = false } -- Example: Assume the player starts alive
+
+local function AutoPickupMoney_Logic()
+    -- Use global services assumed to be defined at the top
+    local RunService = game:GetService("RunService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Players = game:GetService("Players")
+    local Workspace = game:GetService("Workspace")
+
+    local cashFolder = Workspace.Filter:FindFirstChild("SpawnedBread")
+    local remoteEvent = ReplicatedStorage.Events:FindFirstChild("CZDPZUS")
+
+    if not cashFolder then
+        warn("AutoPickupMoney: Could not find Workspace.Filter.SpawnedBread folder.")
+        AutoPickupMoney_Disable() -- Disable if the folder doesn't exist
+        return
+    end
+    if not remoteEvent then
+        warn("AutoPickupMoney: Could not find ReplicatedStorage.Events.CZDPZUS RemoteEvent.")
+        AutoPickupMoney_Disable() -- Disable if the remote doesn't exist
+        return
+    end
+
+    -- Ensure CoolDowns structure exists (or create it safely)
+    if not CoolDowns then CoolDowns = {} end
+    if not CoolDowns.AutoPickUps then CoolDowns.AutoPickUps = {} end
+    if CoolDowns.AutoPickUps.MoneyCooldown == nil then CoolDowns.AutoPickUps.MoneyCooldown = false end
+     -- Ensure Settings structure exists (or create it safely)
+    if not Settings then Settings = {} end
+    if Settings.IsDead == nil then Settings.IsDead = false end -- Default to alive
+
+
+    AutoPickupMoney_Connection = RunService.RenderStepped:Connect(function()
+        -- Primary check: Is the feature enabled?
+        if not AutoPickupMoney_Enabled then return end
+
+        -- Check if player is dead (using the assumed Settings table)
+        if Settings.IsDead then return end
+
+        local player = Players.LocalPlayer
+        local character = player and player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+        -- Check if player character and HRP exist
+        if not hrp then return end
+
+        -- Check cooldown *before* iterating (minor optimization)
+        if CoolDowns.AutoPickUps.MoneyCooldown then return end
+
+        local rootPosition = hrp.Position
+        for i, v in ipairs(cashFolder:GetChildren()) do
+            -- Check distance
+            if (rootPosition - v.Position).Magnitude < 5 then
+                -- Check cooldown again (might have changed between iterations, though unlikely here)
+                if not CoolDowns.AutoPickUps.MoneyCooldown then
+                    CoolDowns.AutoPickUps.MoneyCooldown = true
+                    pcall(function() -- Use pcall for safety when firing remote
+                        remoteEvent:FireServer(v)
+                    end)
+
+                    task.wait(1) -- Use task.wait instead of wait
+
+                    CoolDowns.AutoPickUps.MoneyCooldown = false
+                    break -- Exit loop after picking one up to prevent potential spam
+                end
+            end
+        end
+    end)
+end
+
+local function AutoPickupMoney_Enable()
+    if AutoPickupMoney_Enabled then return end
+    AutoPickupMoney_Enabled = true
+
+    -- Disconnect old connection if somehow exists
+    if AutoPickupMoney_Connection then
+        AutoPickupMoney_Connection:Disconnect()
+        AutoPickupMoney_Connection = nil
+    end
+     -- Stop existing coroutine if it exists
+    if AutoPickupMoney_Coroutine then
+        coroutine.close(AutoPickupMoney_Coroutine)
+        AutoPickupMoney_Coroutine = nil
+    end
+
+    -- Start the logic in a coroutine
+    AutoPickupMoney_Coroutine = coroutine.create(AutoPickupMoney_Logic)
+    coroutine.resume(AutoPickupMoney_Coroutine)
+
+    -- Optional: Update button visuals immediately if needed (the framework might handle this already)
+    -- findButtonAndUpdateVisuals("Auto pickup money")
+end
+
+local function AutoPickupMoney_Disable()
+    if not AutoPickupMoney_Enabled then return end
+    AutoPickupMoney_Enabled = false
+
+    -- Disconnect the RenderStepped event
+    if AutoPickupMoney_Connection then
+        AutoPickupMoney_Connection:Disconnect()
+        AutoPickupMoney_Connection = nil
+    end
+    -- Stop the coroutine
+    if AutoPickupMoney_Coroutine then
+        coroutine.close(AutoPickupMoney_Coroutine)
+        AutoPickupMoney_Coroutine = nil
+    end
+
+    -- Reset cooldown just in case it was stuck on true
+    if CoolDowns and CoolDowns.AutoPickUps then
+        CoolDowns.AutoPickUps.MoneyCooldown = false
+    end
+
+     -- Optional: Update button visuals immediately if needed
+    -- findButtonAndUpdateVisuals("Auto pickup money")
+end
 --============================ Fly ============================--
 local Fly_Enabled = false
 local Fly_Bind = nil
@@ -2590,6 +2721,7 @@ end
 local flyBind_local=Fly_Bind
 local flingTpBind_local = nil -- Bind dla przełącznika Fling TP
 local flingBind_local = nil
+local autoPickupMoneyBind_local = nil
 local adminCheckBind_local=nil
 local meleeBind_local=nil
 local tpBind_local=nil
@@ -2655,6 +2787,9 @@ table.insert(categoryFrames.Misc,
 )
 table.insert(categoryFrames.Misc,
     createToggleRowFrame(" Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return antiFlingBind_local end, function(k) antiFlingBind_local=k end)
+)
+table.insert(categoryFrames.Misc,
+    createToggleRowFrame(" Auto Pickup Money", true, function() return AutoPickupMoney_Enabled end, AutoPickupMoney_Enable, AutoPickupMoney_Disable, function() return autoPickupMoneyBind_local end, function(k) autoPickupMoneyBind_local=k end)
 )
 -- Fling Category
 table.insert(categoryFrames.Fling,
