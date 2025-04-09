@@ -914,7 +914,7 @@ local function AntiAFK_Disable()
 end
 
 
---=================== Melee Aura 4 Alt MAX! (Przywrócona Logika Oryginalna) =====================--
+--=================== Melee Aura 4 Alt MAX! (Poprawiona Logika Zgodnie z Błędem) =====================--
 local MeleeAura_Enabled = false
 local MeleeAura_Connection
 
@@ -922,14 +922,19 @@ local runAttackLoop do
     local plrs = game:GetService("Players")
     local me = plrs.LocalPlayer
     local run = game:GetService("RunService")
+    local replicatedStorage = game:GetService("ReplicatedStorage")
+    local eventsFolder = replicatedStorage:WaitForChild("Events")
 
-    -- Bezpośredni dostęp do RemoteEvent/Function (jak w starym skrypcie - może generować błąd, jeśli nie istnieje!)
-    -- Upewnij się, że ścieżki są poprawne dla Twojej gry!
-    local remote1 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
-    local remote2 = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("XMHH2.2")
-    -- Alternatywnie, jeśli wiesz na 100%, że istnieją:
-    -- local remote1 = game:GetService("ReplicatedStorage").Events["XMHH.2"]
-    -- local remote2 = game:GetService("ReplicatedStorage").Events["XMHH2.2"]
+    -- === POPRAWKA ===
+    -- Zakładamy, że remote1 odnosi się do RemoteFunction (np. "XMHH.2" jak w komentarzu)
+    -- a remote2 odnosi się do RemoteEvent ("XMHH2.2").
+    -- Jeśli nazwy są inne w Twojej grze, zaktualizuj je poniżej.
+    local remoteFunctionPath = "XMHH.2" -- Nazwa RemoteFunction (do InvokeServer)
+    local remoteEventPath = "XMHH2.2" -- Nazwa RemoteEvent (do FireServer)
+
+    local remote1 = eventsFolder:WaitForChild(remoteFunctionPath) -- Powinien być RemoteFunction
+    local remote2 = eventsFolder:WaitForChild(remoteEventPath)    -- Powinien być RemoteEvent
+    -- === KONIEC POPRAWKI ===
 
     local maxdist = 20
 
@@ -937,29 +942,43 @@ local runAttackLoop do
         -- Sprawdzenie celu jak w oryginale
         if not (target and target:FindFirstChild("Head")) then return end
 
-        -- Brak wczesnego sprawdzania narzędzia (jak w oryginale)
         local char = me.Character
         local tool = char and char:FindFirstChildOfClass("Tool")
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-        -- Sprawdzenie czy remotes istnieją - jeśli nie, oryginał by tu rzucił błąd, więc dodajemy ostrzeżenie
-        if not remote1 or not remote2 then
-             warn("MeleeAura Error: Cannot find required RemoteEvents/Functions (Events/XMHH.2 or Events/XMHH2.2).")
-             MeleeAura_Disable() -- Wyłącz, bo nie zadziała
-             return
+        -- Sprawdzenie, czy oba remotes istnieją i są poprawnego typu
+        if not remote1 or not remote1:IsA("RemoteFunction") then
+            warn("MeleeAura Error: Cannot find required RemoteFunction at: ReplicatedStorage.Events." .. remoteFunctionPath .. " or it's not a RemoteFunction.")
+            MeleeAura_Disable() -- Wyłącz, bo nie zadziała
+            return
+        end
+        if not remote2 or not remote2:IsA("RemoteEvent") then
+            warn("MeleeAura Error: Cannot find required RemoteEvent at: ReplicatedStorage.Events." .. remoteEventPath .. " or it's not a RemoteEvent.")
+            MeleeAura_Disable() -- Wyłącz, bo nie zadziała
+            return
         end
 
-        -- Wywołanie InvokeServer bez pcall (jak w oryginale)
+        -- === POPRAWKA: Użycie pcall dla bezpieczeństwa wywołań zdalnych ===
+        -- Wywołanie InvokeServer na RemoteFunction (remote1)
         local arg1 = {
             [1] = "🍞",
             [2] = tick(),
-            [3] = tool, -- Oryginał przekazywał narzędzie
+            [3] = tool,
             [4] = "43TRFWX",
             [5] = "Normal",
             [6] = tick(),
             [7] = true
         }
-        local result = remote1:InvokeServer(unpack(arg1)) -- Może rzucić błąd, jeśli InvokeServer zawiedzie
+        local success1, result = pcall(function()
+            return remote1:InvokeServer(unpack(arg1))
+        end)
+
+        if not success1 then
+            warn("MeleeAura Error: InvokeServer on " .. remoteFunctionPath .. " failed:", result)
+            -- Można rozważyć MeleeAura_Disable() tutaj, jeśli błąd jest krytyczny
+            return -- Przerwij atak, jeśli pierwsze wywołanie się nie powiodło
+        end
+        -- Jeśli sukces, 'result' zawiera zwróconą wartość
 
         task.wait(0.1) -- Opóźnienie z oryginału
 
@@ -968,13 +987,13 @@ local runAttackLoop do
         local head = target:FindFirstChild("Head")
 
         if Handle and head and hrp then -- Dodano sprawdzenie hrp dla pozycji
-            -- Wywołanie FireServer bez pcall (jak w oryginale)
+            -- Wywołanie FireServer na RemoteEvent (remote2), używając 'result' z InvokeServer
             local arg2 = {
                 [1] = "🍞",
                 [2] = tick(),
                 [3] = tool,
                 [4] = "2389ZFX34",
-                [5] = result,
+                [5] = result, -- Użycie wyniku z InvokeServer
                 [6] = false,
                 [7] = Handle,
                 [8] = head,
@@ -982,7 +1001,13 @@ local runAttackLoop do
                 [10] = hrp.Position, -- Użyj pozycji hrp
                 [11] = head.Position
             }
-            remote2:FireServer(unpack(arg2)) -- Może rzucić błąd, jeśli FireServer zawiedzie
+            local success2, errorMsg2 = pcall(function()
+                remote2:FireServer(unpack(arg2))
+            end)
+            if not success2 then
+                warn("MeleeAura Error: FireServer on " .. remoteEventPath .. " failed:", errorMsg2)
+            end
+            -- === KONIEC POPRAWKI pcall ===
         end
     end
 
@@ -1015,9 +1040,10 @@ end
 local function MeleeAura_Enable()
     if MeleeAura_Enabled then return end
     MeleeAura_Enabled = true
-    -- Tworzenie połączenia jak w oryginale (bez sprawdzania czy istnieje)
-    -- Jeśli poprzednie połączenie nie zostało rozłączone, może powstać wyciek - ale tak działał oryginał
-    -- Lepsza praktyka to rozłączanie starego, ale trzymamy się oryginału
+    -- Rozłącz stare połączenie, jeśli istnieje, aby uniknąć wycieków
+    if MeleeAura_Connection and MeleeAura_Connection.Connected then
+        MeleeAura_Connection:Disconnect()
+    end
     MeleeAura_Connection = runAttackLoop()
 end
 
@@ -1027,6 +1053,16 @@ local function MeleeAura_Disable()
     if MeleeAura_Connection and MeleeAura_Connection.Connected then -- Rozłącz, jeśli istnieje i jest połączone
         MeleeAura_Connection:Disconnect()
         MeleeAura_Connection = nil
+    end
+    -- Dodatkowo, zaktualizuj przycisk UI, jeśli jest powiązany
+    -- (zakładając, że masz mechanizm aktualizacji przycisków)
+    for key, bindData in pairs(activeBinds) do
+        if bindData.onEnable == MeleeAura_Enable then
+             if bindData.updateFn then
+                 pcall(bindData.updateFn) -- Wywołaj funkcję aktualizacji przycisku
+             end
+             break -- Znaleziono, można przerwać
+        end
     end
 end
 --======================= Teleport Farm =========================--
