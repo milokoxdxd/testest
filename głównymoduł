@@ -2945,7 +2945,7 @@ table.insert(categoryFrames.Misc,
     createToggleRowFrame(" Anti AFK", true, function() return AntiAFK_Enabled_Dummy end, AntiAFK_Enable, AntiAFK_Disable, function() return antiAFKBind_local end, function(k) antiAFKBind_local=k end) -- Dodano funkcje bind dla AntiAFK
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame(" Admin Check", true, function() return AdminCheck_Enabled end, AdminCheck_Enable, AdminCheck_Disable, function() return adminCheckBind_local end, function(k) adminCheckBind_local=k end)
+    createToggleRowFrame(" Staff Detector", true, function() return AdminCheck_Enabled end, AdminCheck_Enable, AdminCheck_Disable, function() return adminCheckBind_local end, function(k) adminCheckBind_local=k end)
 )
 table.insert(categoryFrames.Misc,
     createToggleRowFrame(" Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return antiFlingBind_local end, function(k) antiFlingBind_local=k end)
