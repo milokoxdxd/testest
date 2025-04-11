@@ -67,7 +67,7 @@ local buttonCorner = Instance.new("UICorner"); buttonCorner.CornerRadius = UDim.
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "Status"; statusLabel.Size = UDim2.new(1,-40,0,20); statusLabel.Position = UDim2.new(0,20,0,190); statusLabel.BackgroundTransparency = 1; statusLabel.Text = ""; statusLabel.Font = Enum.Font.Gotham; statusLabel.TextSize = 12; statusLabel.TextColor3 = Color3.fromRGB(220,100,100); statusLabel.TextXAlignment = Enum.TextXAlignment.Left; statusLabel.Parent = mainFrame
 local footerLabel = Instance.new("TextLabel")
-footerLabel.Name = "Footer"; footerLabel.Size = UDim2.new(1,-40,0,20); footerLabel.Position = UDim2.new(0,20,0,220); footerLabel.BackgroundTransparency = 1; footerLabel.Text = "© 2025 EQR HUB | v1.0.7"; footerLabel.Font = Enum.Font.Gotham; footerLabel.TextSize = 10; footerLabel.TextColor3 = Color3.fromRGB(100,100,120); footerLabel.TextXAlignment = Enum.TextXAlignment.Right; footerLabel.Parent = mainFrame
+footerLabel.Name = "Footer"; footerLabel.Size = UDim2.new(1,-40,0,20); footerLabel.Position = UDim2.new(0,20,0,220); footerLabel.BackgroundTransparency = 1; footerLabel.Text = "© 2025 EQR HUB | v1.0.9"; footerLabel.Font = Enum.Font.Gotham; footerLabel.TextSize = 10; footerLabel.TextColor3 = Color3.fromRGB(100,100,120); footerLabel.TextXAlignment = Enum.TextXAlignment.Right; footerLabel.Parent = mainFrame
 
 -- [[ Button Animations (Unchanged) ]] --
 verifyButton.MouseEnter:Connect(function() TweenService:Create(verifyButton, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(90, 200, 120) }):Play() end)
