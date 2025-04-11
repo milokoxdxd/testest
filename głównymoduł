@@ -268,6 +268,210 @@ local function NoFailLockpick_Disable()
 end
 -------------------------------------------------------------------------------
 
+--======================= OPEN NEARBY DOORS (Added) =========================--
+local OpenNearbyDoors_Enabled = false
+local OpenNearbyDoors_Coroutine = nil -- To manage the loop
+
+-- The main loop logic for opening doors
+local function OpenNearbyDoors_Loop()
+    while OpenNearbyDoors_Enabled and task.wait(0.25) do -- Check every 0.25 seconds
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+        -- Stop checking if player is dead or character doesn't exist
+        if not hrp or not hum or hum.Health <= 0 then
+            continue -- Skip this iteration
+        end
+
+        local doorsFolder = Workspace.Map:FindFirstChild("Doors")
+        if not doorsFolder then
+            warn("OpenNearbyDoors: Cannot find Workspace.Map.Doors folder.")
+            OpenNearbyDoors_Disable() -- Disable the feature if the folder is missing
+            break -- Exit the loop
+        end
+
+        local playerPos = hrp.Position
+        for _, doorInstance in ipairs(doorsFolder:GetChildren()) do
+             -- Check if the instance looks like a valid door model based on children
+            local doorBase = doorInstance:FindFirstChild("DoorBase")
+            local valuesFolder = doorInstance:FindFirstChild("Values")
+            local eventsFolder = doorInstance:FindFirstChild("Events")
+
+            if doorBase and valuesFolder and eventsFolder then
+                local openValue = valuesFolder:FindFirstChild("Open")
+                local toggleEvent = eventsFolder:FindFirstChild("Toggle")
+                -- Find a part likely used as the second argument, e.g., Knob2 or similar name
+                local knobArgument = doorInstance:FindFirstChild("Knob2") or doorInstance:FindFirstChild("Knob") -- Adjust if needed
+
+                -- Proceed only if all required parts/values/events are found
+                if openValue and toggleEvent and knobArgument and typeof(openValue.Value) == "boolean" then
+                    -- Check distance and if the door is currently closed
+                    if (playerPos - doorBase.Position).Magnitude <= 6 then -- Slightly increased range
+                        if openValue.Value == false then
+                            -- Fire the event safely using pcall
+                            local success, err = pcall(function()
+                                toggleEvent:FireServer("Open", knobArgument)
+                            end)
+                            if not success then
+                                warn("OpenNearbyDoors: Error firing Toggle event for door", doorInstance.Name, ":", err)
+                            end
+                            -- No wait here, check all nearby doors in one cycle
+                        end
+                    end
+                end
+            end
+        end
+    end
+    OpenNearbyDoors_Coroutine = nil -- Clear coroutine reference when loop finishes
+end
+
+-- Enable function starts the loop
+local function OpenNearbyDoors_Enable()
+    if OpenNearbyDoors_Enabled then return end -- Already enabled
+    OpenNearbyDoors_Enabled = true
+    -- Start the loop in a new coroutine if it's not already running
+    if not OpenNearbyDoors_Coroutine then
+        OpenNearbyDoors_Coroutine = task.spawn(OpenNearbyDoors_Loop)
+    end
+end
+
+-- Disable function sets the flag, the loop will stop itself
+local function OpenNearbyDoors_Disable()
+    if not OpenNearbyDoors_Enabled then return end -- Already disabled
+    OpenNearbyDoors_Enabled = false
+    -- The loop checks the 'OpenNearbyDoors_Enabled' flag and will exit automatically.
+    -- Coroutine reference is cleared inside the loop itself.
+end
+-------------------------------------------------------------------------------
+
+--================== NEARBY DOOR INTERACTIONS (Open & Unlock - Combined) ==================--
+local OpenNearbyDoors_Enabled = false
+local UnlockNearbyDoors_Enabled = false
+local NearbyDoorInteraction_Coroutine = nil -- Single coroutine for both features
+
+-- Combined loop function for handling nearby door opening and unlocking
+local function NearbyDoorInteraction_Loop()
+    while (OpenNearbyDoors_Enabled or UnlockNearbyDoors_Enabled) do -- Run as long as at least one feature is active
+        local waitTime = 0.25 -- How often to check nearby doors
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+        -- If player is dead or character doesn't exist, wait longer before next check
+        if not hrp or not hum or hum.Health <= 0 then
+            task.wait(waitTime * 2) -- Wait longer if dead/no char
+            continue
+        end
+
+        local doorsFolder = Workspace.Map:FindFirstChild("Doors")
+        if not doorsFolder then
+            warn("NearbyDoorInteraction: Cannot find Workspace.Map.Doors folder. Disabling features.")
+            -- Disable both features if the folder is missing
+            if OpenNearbyDoors_Enabled then OpenNearbyDoors_Disable() end
+            if UnlockNearbyDoors_Enabled then UnlockNearbyDoors_Disable() end
+            break -- Exit the loop permanently if structure is wrong
+        end
+
+        local playerPos = hrp.Position
+        local checkRadius = 6 -- How close the player needs to be
+
+        for _, doorInstance in ipairs(doorsFolder:GetChildren()) do
+            -- Basic checks for a valid door structure
+            local doorBase = doorInstance:FindFirstChild("DoorBase")
+            local valuesFolder = doorInstance:FindFirstChild("Values")
+            local eventsFolder = doorInstance:FindFirstChild("Events")
+
+            if doorBase and valuesFolder and eventsFolder then
+                -- Check distance first for performance
+                if (playerPos - doorBase.Position).Magnitude <= checkRadius then
+                    local toggleEvent = eventsFolder:FindFirstChild("Toggle")
+                    if not toggleEvent then continue end -- Skip if no Toggle event
+
+                    -- --- Unlock Logic ---
+                    if UnlockNearbyDoors_Enabled then
+                        local lockedValue = valuesFolder:FindFirstChild("Locked")
+                        local lockArgument = doorInstance:FindFirstChild("Lock") -- Instance needed for Unlock event
+
+                        -- Check if door is locked and we have the needed parts/values
+                        if lockedValue and lockArgument and typeof(lockedValue.Value) == "boolean" and lockedValue.Value == true then
+                            -- Fire the "Unlock" event safely
+                            local success, err = pcall(function() toggleEvent:FireServer("Unlock", lockArgument) end)
+                            if not success then warn("UnlockNearbyDoors: Error firing event for", doorInstance.Name, ":", err) end
+                            -- If unlock succeeds, the door might become openable immediately,
+                            -- so we let the Open logic below handle it in the same cycle if needed.
+                        end
+                    end
+
+                    -- --- Open Logic ---
+                    if OpenNearbyDoors_Enabled then
+                        local openValue = valuesFolder:FindFirstChild("Open")
+                         -- Argument for Open event (usually Knob2 or similar)
+                        local knobArgument = doorInstance:FindFirstChild("Knob2") or doorInstance:FindFirstChild("Knob")
+
+                         -- Check if door is closed and we have the needed parts/values
+                        if openValue and knobArgument and typeof(openValue.Value) == "boolean" and openValue.Value == false then
+                            -- Check if it's *not* locked (or if unlock is off and we don't care)
+                            local isLocked = valuesFolder:FindFirstChild("Locked")
+                            if not isLocked or isLocked.Value == false or not UnlockNearbyDoors_Enabled then
+                                 -- Fire the "Open" event safely
+                                local success, err = pcall(function() toggleEvent:FireServer("Open", knobArgument) end)
+                                if not success then warn("OpenNearbyDoors: Error firing event for", doorInstance.Name, ":", err) end
+                            end
+                        end
+                    end
+                end -- End distance check
+            end -- End valid door structure check
+        end -- End door loop
+
+        task.wait(waitTime) -- Wait before the next full check cycle
+    end -- End while loop
+    NearbyDoorInteraction_Coroutine = nil -- Clear reference when loop naturally exits
+end
+
+-- Helper function to start/stop the single interaction loop
+local function StartStopDoorInteractionLoop()
+    -- Check if the loop should be running
+    local shouldRun = OpenNearbyDoors_Enabled or UnlockNearbyDoors_Enabled
+
+    if shouldRun and not NearbyDoorInteraction_Coroutine then
+        -- Start the loop if it should run but isn't currently
+        NearbyDoorInteraction_Coroutine = task.spawn(NearbyDoorInteraction_Loop)
+    elseif not shouldRun and NearbyDoorInteraction_Coroutine then
+         -- The loop will stop itself because the while condition will be false.
+         -- The coroutine reference is cleared inside the loop function.
+    end
+end
+
+-- --- Enable/Disable Functions ---
+
+-- Open Doors
+function OpenNearbyDoors_Enable()
+    if OpenNearbyDoors_Enabled then return end
+    OpenNearbyDoors_Enabled = true
+    StartStopDoorInteractionLoop()
+end
+
+function OpenNearbyDoors_Disable()
+    if not OpenNearbyDoors_Enabled then return end
+    OpenNearbyDoors_Enabled = false
+    StartStopDoorInteractionLoop()
+end
+
+-- Unlock Doors
+function UnlockNearbyDoors_Enable()
+    if UnlockNearbyDoors_Enabled then return end
+    UnlockNearbyDoors_Enabled = true
+    StartStopDoorInteractionLoop()
+end
+
+function UnlockNearbyDoors_Disable()
+    if not UnlockNearbyDoors_Enabled then return end
+    UnlockNearbyDoors_Enabled = false
+    StartStopDoorInteractionLoop()
+end
+-------------------------------------------------------------------------------
+
 --======================= Fling (z nowego skryptu) =========================--
 local FlingTP_TargetName = "Enter target nick..." -- Zmienna do przechowywania nazwy celu dla teleportacji przy Flingu
 local FlingTP_Enabled = false -- Nowa flaga stanu dla ciągłego Fling TP
@@ -1073,7 +1277,7 @@ end
 
 
 -- AntiAFK - teraz z możliwością bindowania stanu przycisku
-local AntiAFK_Enabled_Dummy = false
+local AntiAFK_Enabled_Dummy = true
 local AntiAFK_Bind = nil -- Dodajemy zmienną na bind
 local function AntiAFK_Enable()
     AntiAFK_Enabled_Dummy = true
@@ -2917,97 +3121,107 @@ end
 -------------------------------------------------------------------------------
 
 -- Lokalne zmienne do przechowywania wartości bindów (dla getterów/setterów)
-local flyBind_local=Fly_Bind
-local flingTpBind_local = nil -- Bind dla przełącznika Fling TP
-local flingBind_local = nil
-local autoPickupMoneyBind_local = nil
-local adminCheckBind_local=nil
-local meleeBind_local=nil
-local tpBind_local=nil
-local ssBind_local=nil
-local svBind_local=nil
-local infiniteStaminaBind_local=nil
-local nrBind_local=nil
-local espBind_local=nil
-local aimbotBind_local=AimBotSettings.Keybind -- Pobierz aktualną wartość (powinna być nil po poprawce)
-local invisBind_local=nil
-local antiFlingBind_local=nil
-local antiAFKBind_local = nil -- Dodana zmienna dla AntiAFK
-local ragebotBind_local = nil
-local noFailLockpickBind_local = nil
+local keyBinds = {
+    fly = Fly_Bind, -- Inicjalizuj wartością, jeśli jest potrzebna od razu
+    flingTp = nil,
+    fling = nil,
+    autoPickupMoney = nil,
+    adminCheck = nil,
+    melee = nil,
+    tpFarm = nil, -- Zmieniono nazwę z tpBind_local
+    saveSewers = nil, -- Zmieniono nazwę z ssBind_local
+    saveVibe = nil, -- Zmieniono nazwę z svBind_local
+    infiniteStamina = nil,
+    noRecoil = nil, -- Zmieniono nazwę z nrBind_local
+    esp = nil,
+    aimbot = AimBotSettings.Keybind, -- Pobierz aktualną wartość z ustawień aimbota
+    invis = nil,
+    antiFling = nil,
+    antiAFK = nil,
+    ragebot = nil,
+    noFailLockpick = nil,
+    openNearbyDoors = nil,
+    unlockNearbyDoors = nil -- Ostatni bind
+}
 
 -- === Przypisanie ramek do kategorii (Wieloliniowe) ===
 
 -- Combat Category
 table.insert(categoryFrames.Combat,
-    createToggleRowFrame(" Melee Aura", true, function() return MeleeAura_Enabled end, MeleeAura_Enable, MeleeAura_Disable, function() return meleeBind_local end, function(k) meleeBind_local=k end)
+    createToggleRowFrame("Melee Aura", true, function() return MeleeAura_Enabled end, MeleeAura_Enable, MeleeAura_Disable, function() return keyBinds.melee end, function(k) keyBinds.melee=k end)
 )
 table.insert(categoryFrames.Combat,
-    createToggleRowFrame(" Aimbot", true, function() return AimBotSettings.Enabled end, Aimbot_Enable, Aimbot_Disable, function() return aimbotBind_local end, function(k) aimbotBind_local=k; AimBotSettings.Keybind=k end)
+    createToggleRowFrame("Aimbot", true, function() return AimBotSettings.Enabled end, Aimbot_Enable, Aimbot_Disable, function() return keyBinds.aimbot end, function(k) keyBinds.aimbot=k; AimBotSettings.Keybind=k end) -- Nadal aktualizuj AimBotSettings
 )
 table.insert(categoryFrames.Combat,
-    createToggleRowFrame(" No Recoil", true, function() return NoRecoil_Enabled end, NoRecoil_Enable, NoRecoil_Disable, function() return nrBind_local end, function(k) nrBind_local=k end)
+    createToggleRowFrame("No Recoil", true, function() return NoRecoil_Enabled end, NoRecoil_Enable, NoRecoil_Disable, function() return keyBinds.noRecoil end, function(k) keyBinds.noRecoil=k end)
 )
 
 -- Movement Category
 table.insert(categoryFrames.Movement,
-    createToggleRowFrame(" Fly", true, function() return Fly_Enabled end, Fly_Enable, Fly_Disable, function() return flyBind_local end, function(k) flyBind_local=k; Fly_Bind=k end)
+    createToggleRowFrame("Fly", true, function() return Fly_Enabled end, Fly_Enable, Fly_Disable, function() return keyBinds.fly end, function(k) keyBinds.fly=k; Fly_Bind=k end) -- Nadal aktualizuj Fly_Bind, jeśli jest używany gdzieś indziej
 )
 table.insert(categoryFrames.Movement,
-    createToggleRowFrame(" Infinite Stamina", true, function() return isInfiniteStaminaEnabled end, InfiniteStamina_Enable, InfiniteStamina_Disable, function() return infiniteStaminaBind_local end, function(k) infiniteStaminaBind_local=k end)
+    createToggleRowFrame("Infinite Stamina", true, function() return isInfiniteStaminaEnabled end, InfiniteStamina_Enable, InfiniteStamina_Disable, function() return keyBinds.infiniteStamina end, function(k) keyBinds.infiniteStamina=k end)
 )
 
 -- Visuals Category
 table.insert(categoryFrames.Visuals,
-    createToggleRowFrame(" Wallhack", true, function() return ESP_Enabled end, ESP_Enable, ESP_Disable, function() return espBind_local end, function(k) espBind_local=k end)
+    createToggleRowFrame("Wallhack", true, function() return ESP_Enabled end, ESP_Enable, ESP_Disable, function() return keyBinds.esp end, function(k) keyBinds.esp=k end)
 )
 table.insert(categoryFrames.Visuals,
-    createToggleRowFrame(" Invisibility", true, _G.IsInvisEnabled, _G.Invis_Enable, _G.Invis_Disable, function() return invisBind_local end, function(k) invisBind_local=k end)
-) -- Używa funkcji z _G
+    createToggleRowFrame("Invisibility", true, _G.IsInvisEnabled, _G.Invis_Enable, _G.Invis_Disable, function() return keyBinds.invis end, function(k) keyBinds.invis=k end) -- Używa funkcji z _G
+)
 
--- Teleport Category
+-- Farming Category (Zmieniono nazwę z Teleport)
 table.insert(categoryFrames.Farming,
-    createToggleRowFrame(" Teleport Farm", true, function() return TPFarm_Enabled end, TPFarm_Enable, TPFarm_Disable, function() return tpBind_local end, function(k) tpBind_local=k end)
+    createToggleRowFrame("Teleport Farm", true, function() return TPFarm_Enabled end, TPFarm_Enable, TPFarm_Disable, function() return keyBinds.tpFarm end, function(k) keyBinds.tpFarm=k end)
 )
 table.insert(categoryFrames.Farming,
-    createTPFarmTargetRowFrame() -- Dodaj pole tekstowe pod spodem
+    createTPFarmTargetRowFrame() -- Dodaj pole tekstowe pod spodem (bez zmian)
 )
 table.insert(categoryFrames.Farming,
-    createToggleRowFrame(" Safe Sewers TP", true, function() return SaveSewers_Enabled end, SaveSewers_Enable, SaveSewers_Disable, function() return ssBind_local end, function(k) ssBind_local=k end)
+    createToggleRowFrame("Safe Sewers TP", true, function() return SaveSewers_Enabled end, SaveSewers_Enable, SaveSewers_Disable, function() return keyBinds.saveSewers end, function(k) keyBinds.saveSewers=k end)
 )
 table.insert(categoryFrames.Farming,
-    createToggleRowFrame(" Safe Vibecheck TP", true, function() return SaveVibe_Enabled end, SaveVibe_Enable, SaveVibe_Disable, function() return svBind_local end, function(k) svBind_local=k end)
+    createToggleRowFrame("Safe Vibecheck TP", true, function() return SaveVibe_Enabled end, SaveVibe_Enable, SaveVibe_Disable, function() return keyBinds.saveVibe end, function(k) keyBinds.saveVibe=k end)
 )
 
 -- Misc Category
+--table.insert(categoryFrames.Misc,
+    --createToggleRowFrame(" Anti AFK", true, function() return AntiAFK_Enabled_Dummy end, AntiAFK_Enable, AntiAFK_Disable, function() return keyBinds.antiAFK end, function(k) keyBinds.antiAFK=k end)
+--)
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame(" Anti AFK", true, function() return AntiAFK_Enabled_Dummy end, AntiAFK_Enable, AntiAFK_Disable, function() return antiAFKBind_local end, function(k) antiAFKBind_local=k end) -- Dodano funkcje bind dla AntiAFK
+    createToggleRowFrame("Staff Detector", true, function() return AdminCheck_Enabled end, AdminCheck_Enable, AdminCheck_Disable, function() return keyBinds.adminCheck end, function(k) keyBinds.adminCheck=k end)
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame(" Staff Detector", true, function() return AdminCheck_Enabled end, AdminCheck_Enable, AdminCheck_Disable, function() return adminCheckBind_local end, function(k) adminCheckBind_local=k end)
+    createToggleRowFrame("Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return keyBinds.antiFling end, function(k) keyBinds.antiFling=k end)
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame(" Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return antiFlingBind_local end, function(k) antiFlingBind_local=k end)
+    createToggleRowFrame("Auto Pickup Money", true, function() return AutoPickupMoney_Enabled end, AutoPickupMoney_Enable, AutoPickupMoney_Disable, function() return keyBinds.autoPickupMoney end, function(k) keyBinds.autoPickupMoney=k end)
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame(" Auto Pickup Money", true, function() return AutoPickupMoney_Enabled end, AutoPickupMoney_Enable, AutoPickupMoney_Disable, function() return autoPickupMoneyBind_local end, function(k) autoPickupMoneyBind_local=k end)
+    createToggleRowFrame("No Fail Lockpick", true, function() return NoFailLockpick_Enabled end, NoFailLockpick_Enable, NoFailLockpick_Disable, function() return keyBinds.noFailLockpick end, function(k) keyBinds.noFailLockpick=k end)
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame(" No Fail Lockpick", true, function() return NoFailLockpick_Enabled end, NoFailLockpick_Enable, NoFailLockpick_Disable, function() return noFailLockpickBind_local end, function(k) noFailLockpickBind_local=k end)
+    createToggleRowFrame("Unlock Nearby Doors", true, function() return UnlockNearbyDoors_Enabled end, UnlockNearbyDoors_Enable, UnlockNearbyDoors_Disable, function() return keyBinds.unlockNearbyDoors end, function(k) keyBinds.unlockNearbyDoors=k end)
 )
+table.insert(categoryFrames.Misc,
+    createToggleRowFrame("Open Nearby Doors", true, function() return OpenNearbyDoors_Enabled end, OpenNearbyDoors_Enable, OpenNearbyDoors_Disable, function() return keyBinds.openNearbyDoors end, function(k) keyBinds.openNearbyDoors=k end)
+)
+
 -- Fling Category
 table.insert(categoryFrames.Fling,
-    createToggleRowFrame(" Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return flingBind_local end, function(k) flingBind_local=k end)
+    createToggleRowFrame("Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return keyBinds.fling end, function(k) keyBinds.fling=k end)
 )
--- ZASTĄP POPRZEDNIE DWIE LINIE (createFlingTPTargetRowFrame i createActionButtonFrame) PONIŻSZYMI DWIEMA:
-table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole tekstowe na nick (pozostaje bez zmian)
+table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole tekstowe na nick (bez zmian)
 table.insert(categoryFrames.Fling,
-    createToggleRowFrame(" Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return flingTpBind_local end, function(k) flingTpBind_local=k end)
-) -- Teraz jest to PRZEŁĄCZNIK (toggle), który uruchamia/zatrzymuje pętlę
+    createToggleRowFrame("Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return keyBinds.flingTp end, function(k) keyBinds.flingTp=k end)
+)
 
 -- Rage Category
 table.insert(categoryFrames.Rage,
-    createToggleRowFrame(" Ragebot", true, function() return Ragebot_Enabled end, Ragebot_Enable, Ragebot_Disable, function() return ragebotBind_local end, function(k) ragebotBind_local=k end)
+    createToggleRowFrame("Ragebot", true, function() return Ragebot_Enabled end, Ragebot_Enable, Ragebot_Disable, function() return keyBinds.ragebot end, function(k) keyBinds.ragebot=k end)
 )
 
 -------------------------------------------------------------------------------
