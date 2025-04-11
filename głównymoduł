@@ -2964,7 +2964,7 @@ table.insert(categoryFrames.Fling,
 ) -- Teraz jest to PRZEŁĄCZNIK (toggle), który uruchamia/zatrzymuje pętlę
 
 -- Rage Category
-table.insert(categoryFrames.Combat,
+table.insert(categoryFrames.Rage,
     createToggleRowFrame(" Ragebot", true, function() return Ragebot_Enabled end, Ragebot_Enable, Ragebot_Disable, function() return ragebotBind_local end, function(k) ragebotBind_local=k end)
 )
 -------------------------------------------------------------------------------
