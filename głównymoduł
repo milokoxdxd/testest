@@ -3204,10 +3204,10 @@ table.insert(categoryFrames.Misc,
     createToggleRowFrame("No Fail Lockpick", true, function() return NoFailLockpick_Enabled end, NoFailLockpick_Enable, NoFailLockpick_Disable, function() return keyBinds.noFailLockpick end, function(k) keyBinds.noFailLockpick=k end)
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame("Unlock Nearby Doors", true, function() return UnlockNearbyDoors_Enabled end, UnlockNearbyDoors_Enable, UnlockNearbyDoors_Disable, function() return keyBinds.unlockNearbyDoors end, function(k) keyBinds.unlockNearbyDoors=k end)
+    createToggleRowFrame("Auto Unlock Doors", true, function() return UnlockNearbyDoors_Enabled end, UnlockNearbyDoors_Enable, UnlockNearbyDoors_Disable, function() return keyBinds.unlockNearbyDoors end, function(k) keyBinds.unlockNearbyDoors=k end)
 )
 table.insert(categoryFrames.Misc,
-    createToggleRowFrame("Open Nearby Doors", true, function() return OpenNearbyDoors_Enabled end, OpenNearbyDoors_Enable, OpenNearbyDoors_Disable, function() return keyBinds.openNearbyDoors end, function(k) keyBinds.openNearbyDoors=k end)
+    createToggleRowFrame("Auto Open Doors", true, function() return OpenNearbyDoors_Enabled end, OpenNearbyDoors_Enable, OpenNearbyDoors_Disable, function() return keyBinds.openNearbyDoors end, function(k) keyBinds.openNearbyDoors=k end)
 )
 
 -- Fling Category
