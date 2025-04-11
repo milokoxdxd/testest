@@ -1,6 +1,5 @@
 --[[ Original Anti-Idle & Services ]]--
 
-wait(0.5)
 local VirtualUser = game:GetService('VirtualUser')
 
 if game:GetService('Players').LocalPlayer then
