@@ -1380,7 +1380,168 @@ local function AntiFling_Disable()
     end
 end
 
+--======================= RAGEBOT (z drugiego skryptu) =======================--
+-- UWAGA: Działanie zależy od istnienia RemoteEvents:
+-- ReplicatedStorage.Events.GNX_S
+-- ReplicatedStorage.Events.ZFKLF_H
 
+local GNX_S_Remote = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("GNX_S", 5)
+local ZFKLF_H_Remote = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("ZFKLF_H", 5)
+
+local function RandomString(length)
+    local res = ""
+    for i = 1, length do
+        res = res .. string.char(math.random(97, 122))
+    end
+    return res
+end
+
+-- Zmieniono nazwę, aby uniknąć konfliktu, jeśli inne funkcje też szukają celu
+local function GetClosestEnemy_Rage()
+    local closestEnemy = nil
+    -- Zwiększono dystans, oryginalny był bardzo mały (100)
+    local shortestDistance = 200 -- Możesz dostosować zasięg
+
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return nil end -- Potrzebujemy własnej pozycji
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+             -- Można dodać opcjonalne sprawdzenie drużyny i whitelist, jeśli chcesz je zaimplementować
+             -- if SectionSettings.RageBot.CheckTeam and player.Team == LocalPlayer.Team then continue end
+             -- if SectionSettings.RageBot.CheckWhiteList and table.find(WhiteList, player.UserId) then continue end
+
+            local enemyChar = player.Character
+            local enemyHRP = enemyChar and enemyChar:FindFirstChild("HumanoidRootPart")
+            local enemyHum = enemyChar and enemyChar:FindFirstChildOfClass("Humanoid")
+
+            if enemyHRP and enemyHum and enemyHum.Health > 15 and not enemyChar:FindFirstChildOfClass("ForceField") then
+                local distance = (myHRP.Position - enemyHRP.Position).Magnitude
+                if distance < shortestDistance then
+                    -- Opcjonalne sprawdzenie linii wzroku (WallCheck)
+                    -- local _, onScreen = workspace.CurrentCamera:WorldToViewportPoint(enemyHRP.Position)
+                    -- local visible = false
+                    -- if onScreen then
+                    --    local _, obscured = workspace.CurrentCamera:GetPartsObscuringTarget({enemyHRP.Position}, {myChar, enemyChar})
+                    --    visible = (#obscured == 0)
+                    -- end
+                    -- if visible then -- Odkomentuj 'if visible then' i 'end' poniżej, jeśli chcesz wallcheck
+
+                        shortestDistance = distance
+                        closestEnemy = player -- Zwracamy gracza
+
+                    -- end -- dla wallcheck
+                end
+            end
+        end
+    end
+    return closestEnemy -- Zwraca obiekt gracza lub nil
+end
+
+-- Zmieniono nazwę, aby uniknąć konfliktu
+local function Shoot_Rage(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+
+    -- Celuje w głowę zgodnie z logiką drugiego skryptu
+    local targetPart = targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not targetPart then return end
+
+    local myChar = LocalPlayer.Character
+    local tool = myChar and myChar:FindFirstChildOfClass("Tool")
+    -- Sprawdź, czy broń jest typu Gun (jeśli jest taka właściwość)
+    if not tool or not tool:FindFirstChild("IsGun") then
+        -- warn("Ragebot: No suitable gun equipped.")
+        return -- Nie strzelaj bez broni palnej
+    end
+
+    local currentCam = workspace.CurrentCamera
+    local hitPosition = targetPart.Position
+    local hitDirection = (hitPosition - currentCam.CFrame.Position).Unit -- Kierunek od kamery do celu
+    local randomKey = RandomString(30) .. "0" -- Klucz jak w oryginale
+
+    -- Sprawdź, czy remotes istnieją przed wywołaniem
+    if not GNX_S_Remote or not ZFKLF_H_Remote then
+        warn("Ragebot Error: Required remote events not found.")
+        Ragebot_Disable() -- Wyłącz, bo nie zadziała
+        return
+    end
+
+    -- Użyj pcall dla bezpieczeństwa wywołań zdalnych
+    local success1 = pcall(GNX_S_Remote.FireServer, GNX_S_Remote,
+        tick(),
+        randomKey,
+        tool,
+        "FDS9I83",
+        currentCam.CFrame.Position,
+        {hitDirection}, -- Tabela z jednym wektorem
+        false
+    )
+    if not success1 then warn("Ragebot: FireServer GNX_S failed") end
+
+    -- Minimalne opóźnienie, aby serwer mógł przetworzyć pierwszy event?
+    -- task.wait() -- Oryginał miał task.delay(0.00001), co jest praktycznie natychmiastowe. task.wait() jest bezpieczniejsze.
+    -- Usunięto wait, bo może spowalniać. Jeśli będą problemy, można przywrócić.
+
+    local success2 = pcall(ZFKLF_H_Remote.FireServer, ZFKLF_H_Remote,
+        "🍯",
+        tool,
+        randomKey,
+        1, -- Liczba trafień?
+        targetPart,
+        hitPosition,
+        hitDirection,
+        nil, -- Material?
+        nil  -- Normal?
+    )
+    if not success2 then warn("Ragebot: FireServer ZFKLF_H failed") end
+end
+
+local function RagebotLoop()
+    while Ragebot_Enabled do
+        local target = GetClosestEnemy_Rage() -- Znajdź najbliższego wroga (obiekt Player)
+        Ragebot_Target = target -- Zapisz cel (opcjonalne)
+        if target then
+            Shoot_Rage(target) -- Strzelaj do celu
+            -- Dodaj krótkie opóźnienie, aby uniknąć nadmiernego obciążenia/wykrycia
+            -- Możesz eksperymentować z wartością wait
+            task.wait(0.05) -- np. 20 strzałów na sekundę max
+        else
+            -- Jeśli nie ma celu, poczekaj dłużej
+            task.wait(0.1)
+        end
+         -- Usunięto run.RenderStepped:Wait(), używamy task.wait() dla kontroli pętli
+    end
+    Ragebot_Target = nil -- Wyczyść cel po zakończeniu pętli
+    Ragebot_Coroutine = nil -- Zresetuj referencję do korutyny
+end
+
+local function Ragebot_Enable()
+    if Ragebot_Enabled then return end
+    if not GNX_S_Remote or not ZFKLF_H_Remote then
+         warn("Ragebot cannot enable: Required remote events not found.")
+         pcall(function() game:GetService("StarterGui"):SetCore("SendNotification", { Title = "Ragebot Error", Text = "Required remotes missing.", Duration = 5}) end)
+         -- Znajdź ramkę i zaktualizuj UI z powrotem na OFF
+         for k, v in pairs(activeBinds) do if v.onEnable == Ragebot_Enable then if v.updateFn then pcall(v.updateFn) end; break; end end
+         return
+    end
+
+    Ragebot_Enabled = true
+    -- Uruchom pętlę w nowej korutynie, jeśli jeszcze nie działa
+    if not Ragebot_Coroutine then
+        Ragebot_Coroutine = coroutine.create(RagebotLoop)
+        coroutine.resume(Ragebot_Coroutine)
+    end
+end
+
+local function Ragebot_Disable()
+    if not Ragebot_Enabled then return end
+    Ragebot_Enabled = false
+    -- Pętla RagebotLoop sama się zakończy, bo warunek while Ragebot_Enabled będzie false
+    -- Ragebot_Coroutine jest ustawiane na nil wewnątrz pętli
+end
+
+-------------------------------------------------------------------------------
 --======================= AIMBOT (Logika Oryginalna + Poprawka Błędu Nil) =========================--
 local players_aim = Players
 local localPlayer_aim = LocalPlayer
@@ -2620,7 +2781,7 @@ end
 -------------------------------------------------------------------------------
 --  6. Definicje Kategorii i Tworzenie Przycisków Kategorii
 -------------------------------------------------------------------------------
-local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc", "Fling" }
+local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc", "Fling", "Rage" }
 local categoryButtons = {}
 local categoryFrames = {} -- Tabela przechowująca ramki dla każdej kategorii
 local activeCategoryButton = nil
@@ -2734,6 +2895,7 @@ local aimbotBind_local=AimBotSettings.Keybind -- Pobierz aktualną wartość (po
 local invisBind_local=nil
 local antiFlingBind_local=nil
 local antiAFKBind_local = nil -- Dodana zmienna dla AntiAFK
+local ragebotBind_local = nil
 
 -- === Przypisanie ramek do kategorii (Wieloliniowe) ===
 
@@ -2800,6 +2962,11 @@ table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole teksto
 table.insert(categoryFrames.Fling,
     createToggleRowFrame(" Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return flingTpBind_local end, function(k) flingTpBind_local=k end)
 ) -- Teraz jest to PRZEŁĄCZNIK (toggle), który uruchamia/zatrzymuje pętlę
+
+-- Rage Category
+table.insert(categoryFrames.Combat,
+    createToggleRowFrame(" Ragebot", true, function() return Ragebot_Enabled end, Ragebot_Enable, Ragebot_Disable, function() return ragebotBind_local end, function(k) ragebotBind_local=k end)
+)
 -------------------------------------------------------------------------------
 --  8. Globalny Listener InputBegan dla Bindów (Poprawiona aktywacja v4)
 -------------------------------------------------------------------------------
