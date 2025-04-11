@@ -230,6 +230,44 @@ end)
 --  4. Объявляем все переменные и функции скриптов (Oryginalny komentarz)
 --     ORYGINALNA LOGIKA FUNKCJI SKRYPTÓW (Formatowanie Wieloliniowe)
 -------------------------------------------------------------------------------
+
+--======================= NO FAIL LOCKPICK (Added) =========================--
+local NoFailLockpick_Enabled = false
+
+-- Function to apply lockpick modification (used by Enable/Disable and Listener)
+local function ApplyLockpickModification()
+    local lockpickGui = PlayerGui:FindFirstChild("LockpickGUI")
+    if lockpickGui then
+        task.wait(0.1) -- Short delay for safety, GUI elements might need time to load
+        local scaleValue = NoFailLockpick_Enabled and 10 or 1 -- Set scale based on the enabled flag
+        pcall(function() -- Use pcall for safety in case GUI structure changes
+            local lpFrame = lockpickGui:FindFirstChild("MF", true) and lockpickGui.MF:FindFirstChild("LP_Frame", true)
+            if lpFrame and lpFrame:FindFirstChild("Frames", true) then
+                 local frames = lpFrame.Frames
+                 -- Find each bar's UIScale and set its scale
+                 if frames:FindFirstChild("B1", true) and frames.B1:FindFirstChild("Bar", true) and frames.B1.Bar:FindFirstChild("UIScale", true) then frames.B1.Bar.UIScale.Scale = scaleValue end
+                 if frames:FindFirstChild("B2", true) and frames.B2:FindFirstChild("Bar", true) and frames.B2.Bar:FindFirstChild("UIScale", true) then frames.B2.Bar.UIScale.Scale = scaleValue end
+                 if frames:FindFirstChild("B3", true) and frames.B3:FindFirstChild("Bar", true) and frames.B3.Bar:FindFirstChild("UIScale", true) then frames.B3.Bar.UIScale.Scale = scaleValue end
+            else
+                 -- Optional: warn("NoFailLockpick: Could not find expected structure inside existing LockpickGUI.")
+            end
+        end)
+    end
+end
+
+local function NoFailLockpick_Enable()
+    if NoFailLockpick_Enabled then return end -- Already enabled
+    NoFailLockpick_Enabled = true
+    ApplyLockpickModification() -- Apply modification immediately if the GUI is already open
+end
+
+local function NoFailLockpick_Disable()
+    if not NoFailLockpick_Enabled then return end -- Already disabled
+    NoFailLockpick_Enabled = false
+    ApplyLockpickModification() -- Revert modification immediately if the GUI is already open
+end
+-------------------------------------------------------------------------------
+
 --======================= Fling (z nowego skryptu) =========================--
 local FlingTP_TargetName = "Enter target nick..." -- Zmienna do przechowywania nazwy celu dla teleportacji przy Flingu
 local FlingTP_Enabled = false -- Nowa flaga stanu dla ciągłego Fling TP
@@ -2896,6 +2934,7 @@ local invisBind_local=nil
 local antiFlingBind_local=nil
 local antiAFKBind_local = nil -- Dodana zmienna dla AntiAFK
 local ragebotBind_local = nil
+local noFailLockpickBind_local = nil
 
 -- === Przypisanie ramek do kategorii (Wieloliniowe) ===
 
@@ -2953,6 +2992,9 @@ table.insert(categoryFrames.Misc,
 table.insert(categoryFrames.Misc,
     createToggleRowFrame(" Auto Pickup Money", true, function() return AutoPickupMoney_Enabled end, AutoPickupMoney_Enable, AutoPickupMoney_Disable, function() return autoPickupMoneyBind_local end, function(k) autoPickupMoneyBind_local=k end)
 )
+table.insert(categoryFrames.Misc,
+    createToggleRowFrame(" No Fail Lockpick", true, function() return NoFailLockpick_Enabled end, NoFailLockpick_Enable, NoFailLockpick_Disable, function() return noFailLockpickBind_local end, function(k) noFailLockpickBind_local=k end)
+)
 -- Fling Category
 table.insert(categoryFrames.Fling,
     createToggleRowFrame(" Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return flingBind_local end, function(k) flingBind_local=k end)
@@ -2967,6 +3009,7 @@ table.insert(categoryFrames.Fling,
 table.insert(categoryFrames.Rage,
     createToggleRowFrame(" Ragebot", true, function() return Ragebot_Enabled end, Ragebot_Enable, Ragebot_Disable, function() return ragebotBind_local end, function(k) ragebotBind_local=k end)
 )
+
 -------------------------------------------------------------------------------
 --  8. Globalny Listener InputBegan dla Bindów (Poprawiona aktywacja v4)
 -------------------------------------------------------------------------------
@@ -3068,6 +3111,12 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
+PlayerGui.ChildAdded:Connect(function(Item)
+    if Item.Name == "LockpickGUI" then
+        -- Apply modification when the GUI appears, based on the current enabled state
+        ApplyLockpickModification()
+    end
+end)
 
 -------------------------------------------------------------------------------
 --  9. Ustawienie Domyślnej Kategorii i Animacja Otwierania
