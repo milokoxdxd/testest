@@ -124,7 +124,7 @@ Heartbeat:Connect(function(_)
 end)
 
 game.StarterGui:SetCore("SendNotification", {
-    Title = "LOADED "Z" TO TOGGLE",
+    Title = "LOADED",
     Text = "Invisibility loaded | @helloitsme#4243",
     Duration = 5,
 });
