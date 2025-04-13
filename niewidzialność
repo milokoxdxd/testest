@@ -1,4 +1,4 @@
-shared.InvisToggleBind = 'T';
+shared.InvisToggleBind = 'Z';
 
 repeat task.wait() until game:IsLoaded();
 
@@ -124,7 +124,7 @@ Heartbeat:Connect(function(_)
 end)
 
 game.StarterGui:SetCore("SendNotification", {
-    Title = "LOADED",
+    Title = "LOADED "Z" TO TOGGLE",
     Text = "Invisibility loaded | @helloitsme#4243",
     Duration = 5,
 });
