@@ -3015,7 +3015,7 @@ end
 -------------------------------------------------------------------------------
 --  6. Definicje Kategorii i Tworzenie Przycisków Kategorii
 -------------------------------------------------------------------------------
-local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc", "Fling", "Rage" }
+local categories = { "Combat", "Movement", "Visuals", "Farming", "Misc", "Rage" }
 local categoryButtons = {}
 local categoryFrames = {} -- Tabela przechowująca ramki dla każdej kategorii
 local activeCategoryButton = nil
@@ -3203,13 +3203,13 @@ table.insert(categoryFrames.Misc,
 )
 
 -- Fling Category
-table.insert(categoryFrames.Fling,
-    createToggleRowFrame("Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return keyBinds.fling end, function(k) keyBinds.fling=k end)
-)
-table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole tekstowe na nick (bez zmian)
-table.insert(categoryFrames.Fling,
-    createToggleRowFrame("Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return keyBinds.flingTp end, function(k) keyBinds.flingTp=k end)
-)
+--table.insert(categoryFrames.Fling,
+ --   createToggleRowFrame("Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return keyBinds.fling end, function(k) keyBinds.fling=k end)
+--)
+--table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole tekstowe na nick (bez zmian)
+--table.insert(categoryFrames.Fling,
+--   createToggleRowFrame("Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return keyBinds.flingTp end, function(k) keyBinds.flingTp=k end)
+--)
 
 -- Rage Category
 table.insert(categoryFrames.Rage,
