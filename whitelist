@@ -33,12 +33,6 @@ local VALID_KEYS_HWID_MAP = {
     ["keyisyourskrabee"] = {
         ["78C5C6EA-E79C-4169-B66D-4843971CF7C0"] = true    -- Example: Replace with actual HWID
     },
-    ["24hkeyforyoumvnos"] = {
-        ["0211D6EE-D456-40A2-BE95-F055B3E3EC57"] = true    -- Example: Replace with actual HWID
-    },
-    ["24hkeyforyoumta"] = {
-        ["AC270F91-8CA2-4FC4-AF09-229E3B5BB12B"] = true    -- Example: Replace with actual HWID
-    },
 
 }
 -- ======================================================================= --
