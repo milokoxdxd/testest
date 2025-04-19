@@ -27,9 +27,9 @@ local VALID_KEYS_HWID_MAP = {
     ["supersecretkeyforyoupipidik"] = {
         ["68CD9557-CE73-409A-B5EC-E7490C12D0D6"] = true    -- Example: Replace with actual HWID
     },
-    --["supersecretkeyforyouxero"] = {
-        --["E54CA1DD-9BE3-4B6A-BFAF-CFF709FD1827"] = true    -- Example: Replace with actual HWID
-    --},
+    ["supersecretkeyforyouxero"] = {
+        ["E54CA1DD-9BE3-4B6A-BFAF-CFF709FD1827"] = true    -- Example: Replace with actual HWID
+    },
 --    ["keyisyoursloki"] = {
 --        ["A4394BC4-060D-4D6B-9FD6-F76518BE4BE1"] = true    -- Example: Replace with actual HWID
 --    },
