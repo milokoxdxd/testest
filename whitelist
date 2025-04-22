@@ -24,9 +24,6 @@ local ADMIN_KEYS = {
 -- || Configure Regular Keys and their associated HWIDs                   || --
 -- ======================================================================= --
 local VALID_KEYS_HWID_MAP = {
-    ["supersecretkeyforyoupipidik"] = {
-        ["68CD9557-CE73-409A-B5EC-E7490C12D0D6"] = true    -- Example: Replace with actual HWID
-    },
     --["supersecretkeyforyouxero"] = {
         --["E54CA1DD-9BE3-4B6A-BFAF-CFF709FD1827"] = true    -- Example: Replace with actual HWID
     --},
