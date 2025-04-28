@@ -1308,7 +1308,7 @@ local runAttackLoop do
     local remote2 = eventsFolder:WaitForChild(remoteEventPath)    -- Powinien być RemoteEvent
     -- === KONIEC POPRAWKI ===
 
-    local maxdist = 20
+    local maxdist = 5
 
     local function Attack(target)
         -- Sprawdzenie celu jak w oryginale
