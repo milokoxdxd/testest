@@ -24,18 +24,9 @@ local ADMIN_KEYS = {
 -- || Configure Regular Keys and their associated HWIDs                   || --
 -- ======================================================================= --
 local VALID_KEYS_HWID_MAP = {
-    --["supersecretkeyforyouxero"] = {
-        --["E54CA1DD-9BE3-4B6A-BFAF-CFF709FD1827"] = true    -- Example: Replace with actual HWID
+    --["aohilxkeyisyours"] = {
+        --["611C5FD1-17E8-4076-8EDD-AA2FDD62FFB7"] = true    -- Example: Replace with actual HWID
     --},
-    --["keyisyoursloki"] = {
-        --["BDA9320D-DB53-4EBC-AEB2-96B60A4D4C7F"] = true    -- Example: Replace with actual HWID
-    --},
-    --["scnitselpersonal"] = {
-        --["4EFBA807-97C6-4B4D-8CBE-6F95BB694A5B"] = true    -- Example: Replace with actual HWID
-    --},
-    ["aohilxkeyisyours"] = {
-        ["611C5FD1-17E8-4076-8EDD-AA2FDD62FFB7"] = true    -- Example: Replace with actual HWID
-    },
 
 }
 -- ======================================================================= --
