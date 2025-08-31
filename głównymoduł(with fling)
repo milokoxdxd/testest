@@ -1027,6 +1027,68 @@ local function Fly_Disable()
     end
 end
 
+--============================ Noclip ============================--
+-- Serwisy Roblox
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+-- Zmienne lokalne
+local Noclip_Enabled = false
+local Noclip_Connection = nil
+local LocalPlayer = Players.LocalPlayer
+
+-- Funkcja włączająca Noclip
+local function Noclip_Enable()
+    if Noclip_Enabled then
+        return
+    end
+    Noclip_Enabled = true
+
+    -- Tworzymy pętlę, która będzie działać co klatkę
+    Noclip_Connection = RunService.Stepped:Connect(function()
+        -- Sprawdzamy dodatkowo w pętli, czy funkcja nadal powinna być aktywna
+        if not Noclip_Enabled then
+            return
+        end
+
+        local char = LocalPlayer.Character
+        if char then
+            -- Pętla przechodząca przez wszystkie części potomne postaci
+            for _, part in pairs(char:GetDescendants()) do
+                -- Jeśli część jest typu 'BasePart' i ma włączoną kolizję, wyłączamy ją
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+-- Funkcja wyłączająca Noclip
+local function Noclip_Disable()
+    if not Noclip_Enabled then
+        return
+    end
+    Noclip_Enabled = false
+
+    -- Rozłączamy pętlę, aby przestała działać
+    if Noclip_Connection then
+        Noclip_Connection:Disconnect()
+        Noclip_Connection = nil
+    end
+
+    -- WAŻNE: Przywracamy kolizje po wyłączeniu Noclip
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                -- Tutaj zakładamy, że domyślnie wszystkie części mają kolizję.
+                -- W prawdziwej grze może to wymagać bardziej złożonej logiki.
+                part.CanCollide = true
+            end
+        end
+    end
+end
 
 --========================== Admin Check (Nowy - z Twojego kodu) ========================--
 local AdminCheck_Enabled = false -- Domyślnie wyłączony
@@ -3115,6 +3177,7 @@ end
 -- Lokalne zmienne do przechowywania wartości bindów (dla getterów/setterów)
 local keyBinds = {
     fly = Fly_Bind, -- Inicjalizuj wartością, jeśli jest potrzebna od razu
+    noclip = Noclip_Bind,
     flingTp = nil,
     fling = nil,
     autoPickupMoney = nil,
@@ -3152,6 +3215,9 @@ table.insert(categoryFrames.Combat,
 -- Movement Category
 table.insert(categoryFrames.Movement,
     createToggleRowFrame("Fly", true, function() return Fly_Enabled end, Fly_Enable, Fly_Disable, function() return keyBinds.fly end, function(k) keyBinds.fly=k; Fly_Bind=k end) -- Nadal aktualizuj Fly_Bind, jeśli jest używany gdzieś indziej
+)
+table.insert(categoryFrames.Movement,
+    createToggleRowFrame("Noclip", true, function() return Noclip_Enabled end, Noclip_Enable, Noclip_Disable, function() return keyBinds.fly end, function(k) keyBinds.Noclip=k; Noclip_Bind=k end) -- Nadal aktualizuj Noclip_Bind, jeśli jest używany gdzieś indziej
 )
 table.insert(categoryFrames.Movement,
     createToggleRowFrame("Infinite Stamina", true, function() return isInfiniteStaminaEnabled end, InfiniteStamina_Enable, InfiniteStamina_Disable, function() return keyBinds.infiniteStamina end, function(k) keyBinds.infiniteStamina=k end)
