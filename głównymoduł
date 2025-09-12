@@ -343,7 +343,20 @@ local function ApplyBredMakurzModification()
     local playerPosition = character.HumanoidRootPart.Position
 
     for _, v in pairs(bredMakurzFolder:GetChildren()) do
-        local objectPosition = v.PrimaryPart and v.PrimaryPart.Position or v.Position
+        local objectPosition
+        if v.PrimaryPart and v.PrimaryPart:IsA("BasePart") then
+            objectPosition = v.PrimaryPart.Position
+        else
+            -- Próba znalezienia pierwszej części w modelu, jeśli PrimaryPart nie istnieje lub nie jest częścią
+            local part = v:FindFirstChildOfClass("BasePart")
+            if part then
+                objectPosition = part.Position
+            else
+                -- Jeśli nie znaleziono żadnej części, pomiń ten obiekt
+                continue 
+            end
+        end
+        
         local distance = (objectPosition - playerPosition).magnitude
         local existingGui = v:FindFirstChild("Ahh")
 
@@ -366,12 +379,23 @@ local function ApplyBredMakurzModification()
                 textLabel.Text = formatName(v.Name) 
                 x.Adornee = v
                 
-                if v:FindFirstChild("Values") and v.Values:FindFirstChild("Broken") then
-                    if v.Values.Broken.Value ~= false then
+                local values = v:FindFirstChild("Values")
+                local brokenValue = values and values:FindFirstChild("Broken")
+                if brokenValue then
+                    if brokenValue.Value ~= false then
                         textLabel.TextColor3 = Color3.new(255,0,0) 
                     else
                         textLabel.TextColor3 = Color3.new(0,255,0) 
                     end
+
+                    -- Ustawienie nasłuchiwania na zmiany wartości Broken
+                    brokenValue:GetPropertyChangedSignal("Value"):Connect(function()
+                        if brokenValue.Value ~= false then
+                            textLabel.TextColor3 = Color3.new(255,0,0)
+                        else
+                            textLabel.TextColor3 = Color3.new(0,255,0)
+                        end
+                    end)
                 else
                     textLabel.TextColor3 = Color3.new(0,255,0)
                 end
