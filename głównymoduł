@@ -236,56 +236,76 @@ local RunService = game:GetService("RunService")
 local Player = game:GetService("Players").LocalPlayer
 
 local NoFailLockpick_Enabled = false
-local lockpickConnection = nil -- Zmienna do przechowywania naszego aktywnego połączenia (pętli)
 
--- Ta funkcja jest teraz uniwersalna: znajduje GUI i ustawia skalę na podaną wartość.
--- Użyjemy jej zarówno do powiększania pasków, jak i przywracania ich do normy.
-local function ApplyLockpickModification(scaleValue)
-    local PlayerGui = Player:FindFirstChild("PlayerGui")
-    if not PlayerGui then return end -- Sprawdzenie bezpieczeństwa
+local lockpickAddedConnection = nil -- Połączenie do zdarzenia ChildAdded
 
-    local lockpickGui = PlayerGui:FindFirstChild("LockpickGUI")
-    if lockpickGui then
-        -- pcall chroni przed błędami, jeśli struktura GUI się zmieni
-        pcall(function()
-            local frames = lockpickGui.MF.LP_Frame.Frames
-            if frames then
-                 -- Sprawdzamy każdy element przed próbą zmiany, aby uniknąć błędów
-                 if frames:FindFirstChild("B1") then frames.B1.Bar.UIScale.Scale = scaleValue end
-                 if frames:FindFirstChild("B2") then frames.B2.Bar.UIScale.Scale = scaleValue end
-                 if frames:FindFirstChild("B3") then frames.B3.Bar.UIScale.Scale = scaleValue end
-            end
-        end)
-    end
-end
-
--- Funkcja do WŁĄCZANIA moda
+-- Funkcja do włączenia moda
 function NoFailLockpick_Enable()
-    if NoFailLockpick_Enabled then return end -- Już włączone, nic nie rób
+    if NoFailLockpick_Enabled then return end
     NoFailLockpick_Enabled = true
 
-    -- Tworzymy połączenie, które będzie uruchamiać funkcję co klatkę.
-    -- To jest odpowiednik działającej pętli 'while', ale łatwy do zarządzania.
-    lockpickConnection = RunService.RenderStepped:Connect(function()
-        -- W każdej klatce próbujemy zastosować modyfikację z dużą skalą.
-        ApplyLockpickModification(10)
+    local PlayerGui = Player:FindFirstChild("PlayerGui")
+    if not PlayerGui then return end
+    
+    -- Podłączamy się do zdarzenia ChildAdded na PlayerGui
+    lockpickAddedConnection = PlayerGui.ChildAdded:Connect(function(Item)
+        if Item.Name == "LockpickGUI" then
+            local mf = Item:WaitForChild("MF", 10)
+            if not mf then return end
+            
+            local lpFrame = mf:WaitForChild("LP_Frame", 10)
+            if not lpFrame then return end
+            
+            local frames = lpFrame:WaitForChild("Frames", 10)
+            if not frames then return end
+            
+            local b1 = frames:WaitForChild("B1", 10)
+            local b2 = frames:WaitForChild("B2", 10)
+            local b3 = frames:WaitForChild("B3", 10)
+
+            if b1 and b1.Bar and b1.Bar:FindFirstChild("UIScale") then
+                b1.Bar.UIScale.Scale = 10
+            end
+            if b2 and b2.Bar and b2.Bar:FindFirstChild("UIScale") then
+                b2.Bar.UIScale.Scale = 10
+            end
+            if b3 and b3.Bar and b3.Bar:FindFirstChild("UIScale") then
+                b3.Bar.UIScale.Scale = 10
+            end
+        end
     end)
 end
 
--- Funkcja do WYŁĄCZANIA moda
+-- Funkcja do wyłączenia moda
 function NoFailLockpick_Disable()
-    if not NoFailLockpick_Enabled then return end -- Już wyłączone, nic nie rób
+    if not NoFailLockpick_Enabled then return end
     NoFailLockpick_Enabled = false
+    
+    local PlayerGui = Player:FindFirstChild("PlayerGui")
+    if not PlayerGui then return end
 
-    -- Jeśli połączenie (pętla) istnieje, rozłączamy je, aby przestało działać.
-    if lockpickConnection then
-        lockpickConnection:Disconnect()
-        lockpickConnection = nil
+    -- Rozłączamy połączenie ChildAdded
+    if lockpickAddedConnection then
+        lockpickAddedConnection:Disconnect()
+        lockpickAddedConnection = nil
     end
 
-    -- Natychmiast po wyłączeniu, przywracamy skalę do normalnej wartości (1).
-    -- Działa to nawet jeśli minigra jest wciąż otwarta.
-    ApplyLockpickModification(1)
+    -- Natychmiast po wyłączeniu, przywracamy skalę do normalnej wartości (1), jeśli minigra jest otwarta
+    local lockpickGui = PlayerGui:FindFirstChild("LockpickGUI")
+    if lockpickGui then
+        local frames = lockpickGui:FindFirstChild("MF")
+        if frames then
+            local lpFrame = frames:FindFirstChild("LP_Frame")
+            if lpFrame then
+                local bars = lpFrame:FindFirstChild("Frames")
+                if bars then
+                    if bars.B1 and bars.B1.Bar and bars.B1.Bar:FindFirstChild("UIScale") then bars.B1.Bar.UIScale.Scale = 1 end
+                    if bars.B2 and bars.B2.Bar and bars.B2.Bar:FindFirstChild("UIScale") then bars.B2.Bar.UIScale.Scale = 1 end
+                    if bars.B3 and bars.B3.Bar and bars.B3.Bar:FindFirstChild("UIScale") then bars.B3.Bar.UIScale.Scale = 1 end
+                end
+            end
+        end
+    end
 end
 -------------------------------------------------------------------------------
 
