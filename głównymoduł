@@ -289,106 +289,6 @@ function NoFailLockpick_Disable()
 end
 -------------------------------------------------------------------------------
 
---======================= SAFE/REGISTER ESP TOGGLE (Wersja z przełącznikiem) =========================--
-
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-
-local BredMakurz_Enabled = false
-local bredMakurzConnection = nil -- Zmienna do przechowywania naszego aktywnego połączenia (pętli)
-
--- Funkcja pomocnicza do formatowania nazw modeli
-local function formatName(name)
-    -- Zamiana nazw w stylu camelCase na bardziej czytelne z spacjami (np. "SmallSafe" -> "Small Safe")
-    name = string.gsub(name, "([a-z])([A-Z])", "%1 %2")
-    
-    -- Usuwanie tekstu po pierwszym podkreśleniu (np. "Register_M_6" -> "Register")
-    local underscoreIndex = string.find(name, "_")
-    if underscoreIndex then
-        name = string.sub(name, 1, underscoreIndex - 1)
-    end
-    
-    return name
-end
-
--- Ta funkcja zawiera całą logikę odpowiedzialną za tworzenie GUI
-local function ApplyBredMakurzModification()
-    local bredMakurzFolder = Workspace.Map:FindFirstChild("BredMakurz")
-    if not bredMakurzFolder then return end
-
-    for _, v in pairs(bredMakurzFolder:GetChildren()) do
-        pcall(function()
-            -- Sprawdzamy, czy istnieje już takie GUI i niszczymy je przed utworzeniem nowego
-            if v:FindFirstChild("Ahh") then
-                v.Ahh:Destroy()
-            end
-        end)
-        
-        local x = Instance.new('BillboardGui', v)
-        x.Name = "Ahh"
-        x.AlwaysOnTop = true
-        x.Size = UDim2.new(8,0,4,0) -- Rozmiar BillboardGui został jeszcze bardziej zwiększony, aby tekst był widoczny z bardzo daleka
-        x.MaxDistance = 200 -- Ograniczenie widoczności do 100 metrów
-        
-        local textLabel = Instance.new('TextLabel', x)
-        textLabel.Size = UDim2.new(1,0,1,0)
-        textLabel.BackgroundTransparency = 1
-        textLabel.Font = Enum.Font.SourceSansBold
-        textLabel.TextScaled = false -- Zmieniono na false, aby tekst miał stały rozmiar
-        textLabel.TextSize = 15 -- Ustawiono stały rozmiar czcionki na 30
-        
-        textLabel.Text = formatName(v.Name) -- Użycie sformatowanej nazwy
-        x.Adornee = v
-        
-        if v:FindFirstChild("Values") and v.Values:FindFirstChild("Broken") then
-            if v.Values.Broken.Value ~= false then
-                textLabel.TextColor3 = Color3.new(255,0,0) -- Czerwony, gdy uszkodzony
-            else
-                textLabel.TextColor3 = Color3.new(0,255,0) -- Zielony, gdy sprawny
-            end
-        else
-            -- Domyślny kolor, jeśli brakuje wartości Broken
-            textLabel.TextColor3 = Color3.new(0,255,0)
-        end
-    end
-end
-
--- Funkcja do WŁĄCZANIA moda
-function BredMakurz_Enable()
-    if BredMakurz_Enabled then return end -- Już włączone, nic nie rób
-    BredMakurz_Enabled = true
-
-    -- Tworzymy połączenie, które będzie uruchamiać funkcję co klatkę
-    bredMakurzConnection = RunService.Heartbeat:Connect(function()
-        ApplyBredMakurzModification()
-    end)
-end
-
--- Funkcja do WYŁĄCZANIA moda
-function BredMakurz_Disable()
-    if not BredMakurz_Enabled then return end -- Już wyłączone, nic nie rób
-    BredMakurz_Enabled = false
-
-    -- Jeśli połączenie (pętla) istnieje, rozłączamy je, aby przestało działać
-    if bredMakurzConnection then
-        bredMakurzConnection:Disconnect()
-        bredMakurzConnection = nil
-    end
-
-    -- Natychmiast po wyłączeniu, usuwamy wszystkie utworzone BillboardGui
-    local bredMakurzFolder = Workspace.Map:FindFirstChild("BredMakurz")
-    if bredMakurzFolder then
-        for _, v in pairs(bredMakurzFolder:GetChildren()) do
-            pcall(function()
-                if v:FindFirstChild("Ahh") then
-                    v.Ahh:Destroy()
-                end
-            end)
-        end
-    end
-end
--------------------------------------------------------------------------------
-
 --======================= OPEN NEARBY DOORS (Added) =========================--
 local OpenNearbyDoors_Enabled = false
 local OpenNearbyDoors_Coroutine = nil -- To manage the loop
@@ -3317,7 +3217,6 @@ local keyBinds = {
     antiAFK = nil,
     ragebot = nil,
     noFailLockpick = nil,
-	safeESP = nil,
     openNearbyDoors = nil,
     unlockNearbyDoors = nil -- Ostatni bind
 }
@@ -3352,9 +3251,6 @@ table.insert(categoryFrames.Visuals,
 )
 table.insert(categoryFrames.Visuals,
     createToggleRowFrame("Invisibility", true, _G.IsInvisEnabled, _G.Invis_Enable, _G.Invis_Disable, function() return keyBinds.invis end, function(k) keyBinds.invis=k end) -- Używa funkcji z _G
-)
-table.insert(categoryFrames.Visuals,
-    createToggleRowFrame("Safe ESP", true, function() return BredMakurz_Enabled end, BredMakurz_Enable, BredMakurz_Disable, function() return keyBinds.safeESP end, function(k) keyBinds.SafeESP=k end)
 )
 
 -- Farming Category (Zmieniono nazwę z Teleport)
