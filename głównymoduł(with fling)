@@ -230,40 +230,62 @@ end)
 --     ORYGINALNA LOGIKA FUNKCJI SKRYPTÓW (Formatowanie Wieloliniowe)
 -------------------------------------------------------------------------------
 
---======================= NO FAIL LOCKPICK (Added) =========================--
-local NoFailLockpick_Enabled = false
+--======================= NO FAIL LOCKPICK (Wersja z przełącznikiem) =========================--
 
--- Function to apply lockpick modification (used by Enable/Disable and Listener)
-local function ApplyLockpickModification()
+local RunService = game:GetService("RunService")
+local Player = game:GetService("Players").LocalPlayer
+
+local NoFailLockpick_Enabled = false
+local lockpickConnection = nil -- Zmienna do przechowywania naszego aktywnego połączenia (pętli)
+
+-- Ta funkcja jest teraz uniwersalna: znajduje GUI i ustawia skalę na podaną wartość.
+-- Użyjemy jej zarówno do powiększania pasków, jak i przywracania ich do normy.
+local function ApplyLockpickModification(scaleValue)
+    local PlayerGui = Player:FindFirstChild("PlayerGui")
+    if not PlayerGui then return end -- Sprawdzenie bezpieczeństwa
+
     local lockpickGui = PlayerGui:FindFirstChild("LockpickGUI")
     if lockpickGui then
-        task.wait(0.1) -- Short delay for safety, GUI elements might need time to load
-        local scaleValue = NoFailLockpick_Enabled and 10 or 1 -- Set scale based on the enabled flag
-        pcall(function() -- Use pcall for safety in case GUI structure changes
-            local lpFrame = lockpickGui:FindFirstChild("MF", true) and lockpickGui.MF:FindFirstChild("LP_Frame", true)
-            if lpFrame and lpFrame:FindFirstChild("Frames", true) then
-                 local frames = lpFrame.Frames
-                 -- Find each bar's UIScale and set its scale
-                 if frames:FindFirstChild("B1", true) and frames.B1:FindFirstChild("Bar", true) and frames.B1.Bar:FindFirstChild("UIScale", true) then frames.B1.Bar.UIScale.Scale = scaleValue end
-                 if frames:FindFirstChild("B2", true) and frames.B2:FindFirstChild("Bar", true) and frames.B2.Bar:FindFirstChild("UIScale", true) then frames.B2.Bar.UIScale.Scale = scaleValue end
-                 if frames:FindFirstChild("B3", true) and frames.B3:FindFirstChild("Bar", true) and frames.B3.Bar:FindFirstChild("UIScale", true) then frames.B3.Bar.UIScale.Scale = scaleValue end
-            else
-                 -- Optional: warn("NoFailLockpick: Could not find expected structure inside existing LockpickGUI.")
+        -- pcall chroni przed błędami, jeśli struktura GUI się zmieni
+        pcall(function()
+            local frames = lockpickGui.MF.LP_Frame.Frames
+            if frames then
+                 -- Sprawdzamy każdy element przed próbą zmiany, aby uniknąć błędów
+                 if frames:FindFirstChild("B1") then frames.B1.Bar.UIScale.Scale = scaleValue end
+                 if frames:FindFirstChild("B2") then frames.B2.Bar.UIScale.Scale = scaleValue end
+                 if frames:FindFirstChild("B3") then frames.B3.Bar.UIScale.Scale = scaleValue end
             end
         end)
     end
 end
 
-local function NoFailLockpick_Enable()
-    if NoFailLockpick_Enabled then return end -- Already enabled
+-- Funkcja do WŁĄCZANIA moda
+function NoFailLockpick_Enable()
+    if NoFailLockpick_Enabled then return end -- Już włączone, nic nie rób
     NoFailLockpick_Enabled = true
-    ApplyLockpickModification() -- Apply modification immediately if the GUI is already open
+
+    -- Tworzymy połączenie, które będzie uruchamiać funkcję co klatkę.
+    -- To jest odpowiednik działającej pętli 'while', ale łatwy do zarządzania.
+    lockpickConnection = RunService.RenderStepped:Connect(function()
+        -- W każdej klatce próbujemy zastosować modyfikację z dużą skalą.
+        ApplyLockpickModification(10)
+    end)
 end
 
-local function NoFailLockpick_Disable()
-    if not NoFailLockpick_Enabled then return end -- Already disabled
+-- Funkcja do WYŁĄCZANIA moda
+function NoFailLockpick_Disable()
+    if not NoFailLockpick_Enabled then return end -- Już wyłączone, nic nie rób
     NoFailLockpick_Enabled = false
-    ApplyLockpickModification() -- Revert modification immediately if the GUI is already open
+
+    -- Jeśli połączenie (pętla) istnieje, rozłączamy je, aby przestało działać.
+    if lockpickConnection then
+        lockpickConnection:Disconnect()
+        lockpickConnection = nil
+    end
+
+    -- Natychmiast po wyłączeniu, przywracamy skalę do normalnej wartości (1).
+    -- Działa to nawet jeśli minigra jest wciąż otwarta.
+    ApplyLockpickModification(1)
 end
 -------------------------------------------------------------------------------
 
