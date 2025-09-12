@@ -593,6 +593,373 @@ function UnlockNearbyDoors_Disable()
 end
 -------------------------------------------------------------------------------
 
+--======================= Fling (z nowego skryptu) =========================--
+local FlingTP_TargetName = "Enter target nick..." -- Zmienna do przechowywania nazwy celu dla teleportacji przy Flingu
+local FlingTP_Enabled = false -- Nowa flaga stanu dla ciągłego Fling TP
+local FlingTP_Coroutine = nil -- Do przechowywania korutyny pętli Fling TP
+local FlingTP_Loop_Logic -- Deklaracja wstępna dla funkcji pętli
+local Fling_Enabled = false
+local Fling_Coroutine = nil
+local Fling_Function_Logic -- Deklaracja wstępna dla funkcji logiki
+
+-- Funkcja zawierająca główną logikę Fling
+Fling_Function_Logic = function()
+    -- Użyj globalnych serwisów zdefiniowanych na górze głównego skryptu
+	local lp = Players.LocalPlayer
+	local c, hrp, vel, movel = nil, nil, nil, 0.1
+
+	while Fling_Enabled do -- Używamy nowej zmiennej Fling_Enabled
+		RunService.Heartbeat:Wait() -- Użyj globalnego RunService
+		c = lp.Character
+		hrp = c and c:FindFirstChild("HumanoidRootPart")
+
+		if hrp then
+			vel = hrp.Velocity
+			hrp.Velocity = vel * 100000000 + Vector3.new(0, 100000000, 0)
+			RunService.RenderStepped:Wait()
+			hrp.Velocity = vel
+			RunService.Stepped:Wait()
+			hrp.Velocity = vel + Vector3.new(0, movel, 0)
+			movel = -movel
+		end
+	end
+end
+
+-- Funkcja włączająca Fling
+local function Fling_Enable()
+    if Fling_Enabled then return end
+    Fling_Enabled = true
+
+    -- Sprawdzenie i ewentualne utworzenie Decal (z oryginalnego skryptu Fling)
+    local ReplicatedStorage = game:GetService("ReplicatedStorage") -- Upewnij się, że RS jest dostępne
+    if not ReplicatedStorage:FindFirstChild("juisdfj0i32i0eidsuf0iok") then
+        local detection = Instance.new("Decal")
+        detection.Name = "juisdfj0i32i0eidsuf0iok"
+        detection.Parent = ReplicatedStorage
+    end
+
+    -- Uruchomienie logiki w nowej korutynie
+    if Fling_Coroutine then -- Upewnij się, że stara korutyna jest zakończona, jeśli istnieje
+         coroutine.close(Fling_Coroutine) -- Chociaż powinna sama się zakończyć przez flagę
+         Fling_Coroutine = nil
+    end
+    Fling_Coroutine = coroutine.create(Fling_Function_Logic)
+    coroutine.resume(Fling_Coroutine)
+end
+
+-- Funkcja wyłączająca Fling
+local function Fling_Disable()
+	-- Warunek zapobiegający wielokrotnemu wywołaniu
+	if not Fling_Enabled then return end
+
+	-- Wyłącz główny Fling
+	Fling_Enabled = false
+	-- Główna korutyna Flinga (jeśli istnieje) sama się zatrzyma przez zmianę flagi Fling_Enabled
+
+	-- === DODANA LOGIKA: Sprawdź i wyłącz Fling TP ===
+	if FlingTP_Enabled then -- Sprawdź, czy Fling TP jest aktualnie włączony
+		FlingTP_Disable() -- Wywołaj funkcję wyłączającą Fling TP
+		-- FlingTP_Disable() samo zajmie się ustawieniem FlingTP_Enabled = false
+		-- i próbą aktualizacji przycisku Fling TP do stanu OFF / czerwony.
+	end
+	-- === KONIEC DODANEJ LOGIKI ===
+
+	-- Aktualizacja przycisku GŁÓWNEGO Flinga (jeśli istnieje i jest potrzebna)
+    -- Ta część zależy od tego, jak zarządzasz aktualizacją przycisku Fling
+    -- Możliwe, że już jest obsługiwana przez globalny system bindów/przycisków
+	local flingFrame = nil
+	for k, v in pairs(activeBinds) do if v.onEnable == Fling_Enable then flingFrame = v.frame; break; end end
+	if not flingFrame and categoryFrames and categoryFrames.Fling then -- Fallback search
+		 for _, f in ipairs(categoryFrames.Fling) do
+              -- Znajdź ramkę dla przycisku 'Fling', może wymagać dostosowania nazwy
+              if f:FindFirstChild("TextLabel") and f.TextLabel.Text == " Fling" then
+                   flingFrame = f
+                   break
+              end
+         end
+	end
+	if flingFrame and rowFunctionData[flingFrame] and rowFunctionData[flingFrame].updateFn then
+		local success, err = pcall(rowFunctionData[flingFrame].updateFn)
+        if not success then warn("Fling Disable: Failed to update main Fling button visuals:", err) end
+    end
+
+end
+-- Funkcja teleportująca do celu, jeśli Fling jest aktywny
+local function TeleportToFlingTarget()
+	if not Fling_Enabled then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "You have to toggle ON Fling!",
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	if not FlingTP_TargetName or FlingTP_TargetName == "Enter target name..." or FlingTP_TargetName == "" then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "Enter target name'.",
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	local targetPlayer = Players:FindFirstChild(FlingTP_TargetName) -- Użyj globalnego serwisu Players
+	if not targetPlayer then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "Target player not found: " .. FlingTP_TargetName,
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	if targetPlayer == LocalPlayer then -- Użyj globalnego LocalPlayer
+         pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "You can't fling yourself.",
+				Duration = 4
+			})
+		end)
+		return
+	end
+
+	local localChar = LocalPlayer.Character
+	local targetChar = targetPlayer.Character
+	local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+	local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+
+	if localHRP and targetHRP then
+		localHRP.CFrame = targetHRP.CFrame -- Teleportacja DOKŁADNIE do pozycji celu
+	else
+		if not localHRP then end
+		if not targetHRP then end
+        pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling Teleport",
+				Text = "Error: Can't find target player.",
+				Duration = 4
+			})
+		end)
+	end
+end
+-- Główna pętla logiki dla ciągłego Fling TP (WERSJA Z OFFSETEM 1 STUD)
+-- Main logic loop for continuous Fling TP (2 Stud Offset version + English)
+FlingTP_Loop_Logic = function()
+	local flingTpMoveVel = 0.1 -- Local variable for the target's small fling up/down movement
+	local targetPlayer = nil -- Variable for the target player within this loop
+
+	-- Thresholds for movement detection (ADJUST runningThresholdMultiplier IF NEEDED)
+	local standingThreshold = 1.0 -- Velocity magnitude below this is considered standing still
+	local runningThresholdMultiplier = 2.5 -- Increased multiplier. Adjust if needed.
+
+	-- Loop runs as long as this mode is enabled AND the main Fling is enabled
+	while FlingTP_Enabled and Fling_Enabled do
+		RunService.Heartbeat:Wait() -- Wait a frame
+
+		-- Check if we have a valid target at the start of each iteration
+		if not targetPlayer or not targetPlayer:IsDescendantOf(Players) then -- If target disappeared or first iteration
+            if not FlingTP_TargetName or FlingTP_TargetName == "Enter target nick..." or FlingTP_TargetName == "Enter nickname..." or FlingTP_TargetName == "" then -- Check Polish and English placeholders
+				FlingTP_Disable() -- Disable if no target
+				break -- Exit loop
+			end
+			targetPlayer = Players:FindFirstChild(FlingTP_TargetName)
+			if not targetPlayer then
+				FlingTP_Disable() -- Disable if target not found
+				break -- Exit loop
+			end
+			-- print("Fling TP Loop: Target acquired: " .. targetPlayer.Name) -- Keep commented unless debugging
+		end
+
+		-- Get characters and HRPs (must be checked each iteration)
+		local localChar = LocalPlayer.Character
+		local targetChar = targetPlayer.Character
+		local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+		local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+		local targetHum = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
+
+		-- Check continuation conditions
+		if not localHRP then
+			continue -- Wait for respawn
+		end
+
+		if not targetHRP or not targetHum or targetHum.Health <= 0 then
+			warn("Fling TP Loop: Target (" .. (targetPlayer and targetPlayer.Name or "Unknown") .. ") is dead or lacks HRP/Humanoid.")
+			--FlingTP_Disable() -- <<< Wywołanie Disable, gdy cel umiera/jest nieprawidłowy
+			break -- Exit loop
+		end
+
+		-- === DYNAMIC OFFSET CALCULATION (CORRECTED LOGIC ORDER) ===
+		local currentTargetVelocityMag = targetHRP.Velocity.Magnitude
+		local targetBaseWalkSpeed = targetHum.WalkSpeed
+		local dynamicOffsetDistance -- Declare variable
+
+		-- Check for RUNNING first (highest speed condition)
+		if currentTargetVelocityMag > targetBaseWalkSpeed * runningThresholdMultiplier then
+			dynamicOffsetDistance = 13 -- Assign RUNNING distance
+
+		-- Check for WALKING next (intermediate speed condition)
+		elseif currentTargetVelocityMag >= standingThreshold then
+			dynamicOffsetDistance = 8 -- Assign WALKING distance
+
+		-- Must be STANDING otherwise (lowest speed condition)
+		else
+			dynamicOffsetDistance = 1 -- Assign STANDING distance
+		end
+		-- === END OF DYNAMIC OFFSET CALCULATION ===
+
+
+		-- === TELEPORTATION LOGIC USING DYNAMIC OFFSET ===
+		-- 1. Teleport local player DYNAMICALLY IN FRONT of the target
+		local targetLookVector = targetHRP.CFrame.LookVector -- Direction the target is facing
+		local desiredPosition = targetHRP.Position + (targetLookVector * dynamicOffsetDistance) -- Calculate position using dynamic offset
+		-- Set CFrame to be at the new position, looking TOWARDS the target's position
+		local newCFrame = CFrame.new(desiredPosition, targetHRP.Position)
+		localHRP.CFrame = newCFrame
+		-- === END OF TELEPORTATION LOGIC ===
+
+		-- 2. Apply fling effect TO THE TARGET (no change, includes safety check)
+		local targetVel = targetHRP.Velocity
+		if targetVel.Magnitude < 500 then -- Avoid multiplying already huge velocities
+			targetHRP.Velocity = targetVel * 1000000000 + Vector3.new(0, 1000000000, 0)
+			RunService.RenderStepped:Wait() -- Wait for render for the change to be effective
+			targetHRP.Velocity = targetVel -- Reset to original velocity
+			RunService.Stepped:Wait() -- Wait for physics step
+			targetHRP.Velocity = targetVel + Vector3.new(0, flingTpMoveVel, 0) -- Small up/down movement
+			flingTpMoveVel = -flingTpMoveVel -- Reverse direction for the next iteration
+		else
+			RunService.Stepped:Wait() -- Still wait even if not applying force
+		end
+
+
+	end -- Koniec pętli while
+
+	-- === USUNIĘTY BLOK KODU ===
+	-- Poniższy blok został usunięty, ponieważ FlingTP_Disable() jest już wywoływane
+	-- w odpowiednich momentach (wewnątrz pętli lub przez użytkownika) i zawiera
+	-- warunek zapobiegający wielokrotnemu wykonaniu.
+	--[[
+	if FlingTP_Enabled then
+		FlingTP_Enabled = false
+		-- Might need to update the UI button here if createToggleRowFrame doesn't catch it
+		local frame = nil
+		-- Attempt to find the associated frame/button to update its visual state
+        for k, v in pairs(activeBinds) do if v.onEnable == FlingTP_Enable then frame = v.frame; break; end end
+        if not frame and categoryFrames and categoryFrames.Fling then -- Fallback search
+             for _, f in ipairs(categoryFrames.Fling) do if f.Name == "FlingTPToTarget" then frame = f; break; end end
+        end
+		if frame and rowFunctionData[frame] and rowFunctionData[frame].updateFn then
+			local success, err = pcall(rowFunctionData[frame].updateFn) -- Try to update the button visuals
+            if not success then warn("Fling TP Loop: Failed to update button visuals on loop end:", err) end
+        else
+             warn("Fling TP Loop: Could not find button frame or update function on loop end.")
+        end
+	end
+	]]--
+	-- === KONIEC USUNIĘTEGO BLOKU ===
+
+	FlingTP_Coroutine = nil -- Ustaw korutynę na nil po zakończeniu pętli
+end
+
+-- Function to enable continuous Fling TP (English version)
+local function FlingTP_Enable()
+	if FlingTP_Enabled then return end -- Already enabled
+
+	if not Fling_Enabled then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "You need to enable the main Fling first!",
+				Duration = 4
+			})
+		end)
+		return -- Don't enable because main Fling is off
+	end
+
+    -- Check both Polish and English placeholders, just in case
+	if not FlingTP_TargetName or FlingTP_TargetName == "Enter target nick..." or FlingTP_TargetName == "Enter nickname..." or FlingTP_TargetName == "" then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "Enter a target player name first.",
+				Duration = 4
+			})
+		end)
+		return -- Don't enable without a target
+	end
+
+	local targetPlayer = Players:FindFirstChild(FlingTP_TargetName)
+	if not targetPlayer then
+		pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "Target player not found: " .. FlingTP_TargetName,
+				Duration = 4
+			})
+		end)
+		return -- Don't enable if target doesn't exist
+	end
+
+    if targetPlayer == LocalPlayer then
+        pcall(function()
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = "Fling TP",
+				Text = "You cannot target yourself.",
+				Duration = 4
+			})
+		end)
+        return -- Don't enable if targeting self
+    end
+
+
+	-- All conditions met, enable the feature
+	FlingTP_Enabled = true
+
+	-- Start the loop logic in a coroutine
+	if FlingTP_Coroutine then coroutine.close(FlingTP_Coroutine); FlingTP_Coroutine = nil; end -- Close old one if exists
+	FlingTP_Coroutine = coroutine.create(FlingTP_Loop_Logic)
+	coroutine.resume(FlingTP_Coroutine)
+    -- Explicitly update button visuals after enabling state
+    -- (This helps ensure the button shows "ON" immediately)
+     local frame = nil
+     for k, v in pairs(activeBinds) do if v.onEnable == FlingTP_Enable then frame = v.frame; break; end end
+      if not frame and categoryFrames and categoryFrames.Fling then -- Fallback search
+          for _, f in ipairs(categoryFrames.Fling) do if f.Name == "FlingTPToTarget" then frame = f; break; end end
+     end
+     if frame and rowFunctionData[frame] and rowFunctionData[frame].updateFn then
+          pcall(rowFunctionData[frame].updateFn)
+     end
+end
+
+-- Function to disable continuous Fling TP (English version)
+local function FlingTP_Disable()
+	-- !!! WAŻNY WARUNEK: Jeśli już jest wyłączone, nic nie rób !!! --
+	if not FlingTP_Enabled then return end -- Already disabled
+
+	-- Jeśli doszło tutaj, oznacza to, że było włączone i teraz jest wyłączane
+	FlingTP_Enabled = false
+	-- Pętla w FlingTP_Loop_Logic sama się zakończy, bo warunek `while FlingTP_Enabled...` będzie fałszywy
+	-- FlingTP_Coroutine jest ustawiane na nil w pętli po jej zakończeniu
+
+	-- Explicitly update button visuals after disabling state
+	local frame = nil
+	-- Attempt to find the associated frame/button to update its visual state
+	for k, v in pairs(activeBinds) do if v.onEnable == FlingTP_Enable then frame = v.frame; break; end end
+	if not frame and categoryFrames and categoryFrames.Fling then -- Fallback search
+		 for _, f in ipairs(categoryFrames.Fling) do if f.Name == "FlingTPToTarget" then frame = f; break; end end
+	end
+	if frame and rowFunctionData[frame] and rowFunctionData[frame].updateFn then
+		local success, err = pcall(rowFunctionData[frame].updateFn) -- Try to update the button visuals
+		if not success then end
+	end
+end
 -------------------------------------------------------------------------------
 -- Block for: Auto Pickup Money (Add this with other function definitions)
 -------------------------------------------------------------------------------
@@ -782,6 +1149,68 @@ local function Fly_Disable()
     end
 end
 
+--============================ Noclip ============================--
+-- Serwisy Roblox
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+-- Zmienne lokalne
+local Noclip_Enabled = false
+local Noclip_Connection = nil
+local LocalPlayer = Players.LocalPlayer
+
+-- Funkcja włączająca Noclip
+local function Noclip_Enable()
+    if Noclip_Enabled then
+        return
+    end
+    Noclip_Enabled = true
+
+    -- Tworzymy pętlę, która będzie działać co klatkę
+    Noclip_Connection = RunService.Stepped:Connect(function()
+        -- Sprawdzamy dodatkowo w pętli, czy funkcja nadal powinna być aktywna
+        if not Noclip_Enabled then
+            return
+        end
+
+        local char = LocalPlayer.Character
+        if char then
+            -- Pętla przechodząca przez wszystkie części potomne postaci
+            for _, part in pairs(char:GetDescendants()) do
+                -- Jeśli część jest typu 'BasePart' i ma włączoną kolizję, wyłączamy ją
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+-- Funkcja wyłączająca Noclip
+local function Noclip_Disable()
+    if not Noclip_Enabled then
+        return
+    end
+    Noclip_Enabled = false
+
+    -- Rozłączamy pętlę, aby przestała działać
+    if Noclip_Connection then
+        Noclip_Connection:Disconnect()
+        Noclip_Connection = nil
+    end
+
+    -- WAŻNE: Przywracamy kolizje po wyłączeniu Noclip
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                -- Tutaj zakładamy, że domyślnie wszystkie części mają kolizję.
+                -- W prawdziwej grze może to wymagać bardziej złożonej logiki.
+                part.CanCollide = true
+            end
+        end
+    end
+end
 
 --========================== Admin Check (Nowy - z Twojego kodu) ========================--
 local AdminCheck_Enabled = false -- Domyślnie wyłączony
@@ -1283,6 +1712,251 @@ local function TPFarm_Disable()
         TPFarm_CharConnection:Disconnect()
         TPFarm_CharConnection=nil
     end
+end
+
+
+--======================= ANTI-FLING =========================--
+local run_af = RunService
+local plrs_af = Players
+local me_af = LocalPlayer
+local work = true
+wait(1)
+
+-- Główna pętla Anti-Fling z oryginału (działa zawsze)
+run_af.RenderStepped:Connect(function()
+    local char=me_af.Character
+    if not char then return end
+    local hrp=char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local oldVelocity=hrp.Velocity
+    for _, part in pairs(char:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanTouch=false
+            if part.Velocity.Magnitude>oldVelocity.Magnitude*3 then
+                part.Velocity=Vector3.zero
+            end
+        end
+    end
+    for _, player in pairs(plrs_af:GetPlayers()) do
+        if player~=me_af then
+            local plrChar=player.Character
+            if plrChar then
+                for _, part in pairs(plrChar:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        if part.Velocity.Magnitude>oldVelocity.Magnitude*3 then
+                            part.Velocity=Vector3.zero
+                            part.CanTouch=false
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Funkcje dla przycisku UI (kontrolują drugą, nadmiarową pętlę z oryginału)
+local AntiFling_Enabled=false
+local AntiFling_Connection=nil
+
+local function AntiFling_Enable()
+    if AntiFling_Enabled then return end
+    AntiFling_Enabled=true
+    if not AntiFling_Connection then
+        -- Ta pętla była duplikatem w oryginale
+        AntiFling_Connection=run_af.RenderStepped:Connect(function()
+            local char=me_af.Character
+            if not char then return end
+            local hrp=char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            local oldVelocity_inner=hrp.Velocity
+            for _, part in pairs(char:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanTouch=false
+                    if part.Velocity.Magnitude>oldVelocity_inner.Magnitude*3 then
+                        part.Velocity=Vector3.zero
+                    end
+                end
+            end
+            for _, player in pairs(plrs_af:GetPlayers()) do
+                if player~=me_af then
+                    local plrChar=player.Character
+                    if plrChar then
+                        for _, part in pairs(plrChar:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                if part.Velocity.Magnitude>oldVelocity_inner.Magnitude*3 then
+                                    part.Velocity=Vector3.zero
+                                    part.CanTouch=false
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function AntiFling_Disable()
+    if not AntiFling_Enabled then return end
+    AntiFling_Enabled=false
+    if AntiFling_Connection then
+        AntiFling_Connection:Disconnect()
+        AntiFling_Connection=nil
+    end
+end
+
+--======================= RAGEBOT (Oryginalna struktura z poprawionymi argumentami) =======================--
+-- UWAGA: Działanie zależy od istnienia RemoteEvents:
+-- ReplicatedStorage.Events.GNX_S
+-- ReplicatedStorage.Events.ZFKLF__H <-- Zmieniono na podwójne podkreślenie
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage") -- Użyj globalnego ReplicatedStorage jeśli istnieje
+local EventsFolder = ReplicatedStorage:WaitForChild("Events", 10) -- Dłuższy timeout dla pewności
+
+local GNX_S_Remote = EventsFolder and EventsFolder:WaitForChild("GNX_S", 5)
+-- ZMIANA 1: Nazwa drugiego RemoteEvent zaktualizowana do tej z nowego skryptu
+local ZFKLF_H_Remote = EventsFolder and EventsFolder:WaitForChild("ZFKLF__H", 5)
+
+-- Funkcja pomocnicza z oryginalnego bloku
+local function RandomString(length)
+    local res = ""
+    for i = 1, length do
+        res = res .. string.char(math.random(97, 122))
+    end
+    return res
+end
+
+-- Funkcja GetClosestEnemy z oryginalnego bloku (bez zmian)
+local function GetClosestEnemy_Rage()
+    local closestEnemy = nil
+    local shortestDistance = 200 -- Oryginalny zasięg z tego bloku
+
+    local myChar = LocalPlayer.Character -- Użyj globalnego LocalPlayer
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return nil end
+
+    for _, player in ipairs(Players:GetPlayers()) do -- Użyj globalnego Players
+        if player ~= LocalPlayer then
+            local enemyChar = player.Character
+            local enemyHRP = enemyChar and enemyChar:FindFirstChild("HumanoidRootPart")
+            local enemyHum = enemyChar and enemyChar:FindFirstChildOfClass("Humanoid")
+
+            if enemyHRP and enemyHum and enemyHum.Health > 15 and not enemyChar:FindFirstChildOfClass("ForceField") then
+                local distance = (myHRP.Position - enemyHRP.Position).Magnitude
+                if distance < shortestDistance then
+                    -- WallCheck był opcjonalny w tym bloku, pozostawiamy go bez zmian (domyślnie wyłączony/brak)
+                    shortestDistance = distance
+                    closestEnemy = player
+                end
+            end
+        end
+    end
+    return closestEnemy
+end
+
+-- Funkcja Shoot z oryginalnego bloku (ZE ZMIENIONYM ARGUMENTEM)
+local function Shoot_Rage(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+
+    local targetPart = targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not targetPart then return end
+
+    local myChar = LocalPlayer.Character
+    local tool = myChar and myChar:FindFirstChildOfClass("Tool")
+    -- Usunięto sprawdzanie 'IsGun' z oryginalnego bloku, bo było zakomentowane
+    if not tool then
+        return
+    end
+
+    local currentCam = workspace.CurrentCamera
+    local hitPosition = targetPart.Position
+    local hitDirection = (hitPosition - currentCam.CFrame.Position).Unit
+    local randomKey = RandomString(30) .. "0"
+
+    if not GNX_S_Remote or not ZFKLF_H_Remote then
+        warn("Ragebot Error: Required remote events not found.")
+        -- W oryginalnym bloku była tu funkcja Ragebot_Disable(), zachowujemy ją
+        if typeof(Ragebot_Disable) == "function" then
+            Ragebot_Disable()
+        end
+        return
+    end
+
+    -- Wywołanie GNX_S (bez zmian w argumentach względem oryginału tego bloku)
+    local success1, err1 = pcall(function()
+        GNX_S_Remote:FireServer( -- Usunięto self jako pierwszy argument, bo pcall go nie wymaga
+            tick(),
+            randomKey,
+            tool,
+            "FDS9I83", -- Statyczny string z tego bloku
+            currentCam.CFrame.Position,
+            {hitDirection},
+            false
+        )
+    end)
+    if not success1 then warn("Ragebot: FireServer GNX_S failed:", err1) end
+
+    -- Wywołanie ZFKLF__H (ZE ZMIENIONYM ARGUMENTEM)
+    local success2, err2 = pcall(function()
+        ZFKLF_H_Remote:FireServer( -- Usunięto self
+            -- ZMIANA 2: Pierwszy argument zmieniony na ten z nowego skryptu
+            "🧈",
+            -- Reszta argumentów jak w oryginalnym bloku (które pasują do nowego)
+            tool,
+            randomKey,
+            1, -- Liczba trafień
+            targetPart,
+            hitPosition,
+            hitDirection,
+            nil, -- Material (był nil w oryginale)
+            nil  -- Normal (był nil w oryginale)
+        )
+    end)
+    if not success2 then warn("Ragebot: FireServer ZFKLF__H failed:", err2) end
+end
+
+-- Pętla i funkcje Enable/Disable z oryginalnego bloku (bez zmian)
+local Ragebot_Enabled = false -- Zmienna stanu z oryginalnego bloku
+local Ragebot_Coroutine = nil -- Zmienna coroutine z oryginalnego bloku
+local Ragebot_Target = nil -- Zmienna celu z oryginalnego bloku
+
+local function RagebotLoop()
+    while Ragebot_Enabled do
+        local target = GetClosestEnemy_Rage()
+        Ragebot_Target = target
+        if target then
+            Shoot_Rage(target)
+            task.wait(0.05) -- Oryginalne opóźnienie z tego bloku
+        else
+            task.wait(0.1) -- Oryginalne opóźnienie z tego bloku
+        end
+    end
+    Ragebot_Target = nil
+    Ragebot_Coroutine = nil
+end
+
+local function Ragebot_Enable()
+    -- Sprawdzenie remote'ów z oryginalnego bloku
+    if not GNX_S_Remote or not ZFKLF_H_Remote then
+         warn("Ragebot cannot enable: Required remote events not found.")
+         pcall(function() game:GetService("StarterGui"):SetCore("SendNotification", { Title = "Ragebot Error", Text = "Required remotes missing.", Duration = 5}) end)
+         -- Aktualizacja UI z oryginalnego bloku
+         for k, v in pairs(activeBinds or {}) do if v.onEnable == Ragebot_Enable then if v.updateFn then task.wait(); pcall(v.updateFn) end; break; end end
+         return
+    end
+    -- Reszta logiki Enable z oryginalnego bloku
+    if Ragebot_Enabled then return end
+    Ragebot_Enabled = true
+    if not Ragebot_Coroutine then
+        Ragebot_Coroutine = coroutine.create(RagebotLoop)
+        coroutine.resume(Ragebot_Coroutine)
+    end
+end
+
+local function Ragebot_Disable()
+    -- Logika Disable z oryginalnego bloku
+    if not Ragebot_Enabled then return end
+    Ragebot_Enabled = false
 end
 
 -------------------------------------------------------------------------------
@@ -2388,6 +3062,67 @@ local function createTPFarmTargetRowFrame()
     end)
     return frame
 end
+-- Funkcja tworząca wiersz dla celu teleportacji przy Flingu
+local function createFlingTPTargetRowFrame()
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -20, 0, 35)
+	frame.BackgroundTransparency = 1
+	frame.Name = "FlingTPTarget"
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.4, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = "  TP Target:" -- Możesz zmienić tekst
+	label.TextColor3 = buttonTextColor
+	label.Font = Enum.Font.GothamSemibold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = frame
+
+	local inputContainer = Instance.new("Frame")
+	inputContainer.Size = UDim2.new(0.6, -5, 0.8, 0)
+	inputContainer.Position = UDim2.new(0.4, 5, 0.1, 0)
+	inputContainer.BackgroundColor3 = buttonColor
+	inputContainer.BorderSizePixel = 0
+	inputContainer.Parent = frame
+
+	local inputCorner = Instance.new("UICorner")
+	inputCorner.CornerRadius = UDim.new(0, 6)
+	inputCorner.Parent = inputContainer
+	local inputStroke = Instance.new("UIStroke")
+	inputStroke.Color = buttonStrokeColor
+	inputStroke.Thickness = 1
+	inputStroke.Parent = inputContainer
+
+	local input = Instance.new("TextBox")
+	input.Size = UDim2.new(1, -10, 1, -4)
+	input.Position = UDim2.new(0, 5, 0, 2)
+	input.BackgroundTransparency = 1
+	input.TextColor3 = Color3.new(1, 1, 1)
+	input.Font = Enum.Font.Gotham
+	input.TextSize = 12
+	input.Text = FlingTP_TargetName -- Użyj nowej zmiennej
+	input.PlaceholderText = "Enter target nick..." -- Możesz zmienić tekst
+	input.ClearTextOnFocus = false
+	input.Parent = inputContainer
+
+	input.FocusLost:Connect(function(enterPressed)
+		if input.Text ~= "" then
+			FlingTP_TargetName = input.Text -- Aktualizuj nową zmienną
+		else
+			FlingTP_TargetName = "Enter target nick..." -- Resetuj, jeśli puste
+			input.Text = FlingTP_TargetName -- Aktualizuj też pole tekstowe
+		end
+	end)
+
+	inputContainer.MouseEnter:Connect(function()
+		TweenService:Create(inputContainer, TweenInfo.new(0.1), { BackgroundColor3 = buttonHoverColor }):Play()
+	end)
+	inputContainer.MouseLeave:Connect(function()
+		TweenService:Create(inputContainer, TweenInfo.new(0.1), { BackgroundColor3 = buttonColor }):Play()
+	end)
+	return frame
+end
 -- Funkcja tworząca wiersz z przyciskiem akcji
 local function createActionButtonFrame(labelText, buttonText, actionFunction)
 	local frame = Instance.new("Frame")
@@ -2564,6 +3299,9 @@ end
 -- Lokalne zmienne do przechowywania wartości bindów (dla getterów/setterów)
 local keyBinds = {
     fly = Fly_Bind, -- Inicjalizuj wartością, jeśli jest potrzebna od razu
+    noclip = Noclip_Bind,
+    flingTp = nil,
+    fling = nil,
     autoPickupMoney = nil,
     adminCheck = nil,
     melee = nil,
@@ -2575,7 +3313,9 @@ local keyBinds = {
     esp = nil,
     aimbot = AimBotSettings.Keybind, -- Pobierz aktualną wartość z ustawień aimbota
     invis = nil,
+    antiFling = nil,
     antiAFK = nil,
+    ragebot = nil,
     noFailLockpick = nil,
 	safeESP = nil,
     openNearbyDoors = nil,
@@ -2598,6 +3338,9 @@ table.insert(categoryFrames.Combat,
 -- Movement Category
 table.insert(categoryFrames.Movement,
     createToggleRowFrame("Fly", true, function() return Fly_Enabled end, Fly_Enable, Fly_Disable, function() return keyBinds.fly end, function(k) keyBinds.fly=k; Fly_Bind=k end) -- Nadal aktualizuj Fly_Bind, jeśli jest używany gdzieś indziej
+)
+table.insert(categoryFrames.Movement,
+    createToggleRowFrame("Noclip", true, function() return Noclip_Enabled end, Noclip_Enable, Noclip_Disable, function() return keyBinds.fly end, function(k) keyBinds.Noclip=k; Noclip_Bind=k end) -- Nadal aktualizuj Noclip_Bind, jeśli jest używany gdzieś indziej
 )
 table.insert(categoryFrames.Movement,
     createToggleRowFrame("Infinite Stamina", true, function() return isInfiniteStaminaEnabled end, InfiniteStamina_Enable, InfiniteStamina_Disable, function() return keyBinds.infiniteStamina end, function(k) keyBinds.infiniteStamina=k end)
@@ -2636,6 +3379,9 @@ table.insert(categoryFrames.Misc,
     createToggleRowFrame("Staff Detector", true, function() return AdminCheck_Enabled end, AdminCheck_Enable, AdminCheck_Disable, function() return keyBinds.adminCheck end, function(k) keyBinds.adminCheck=k end)
 )
 table.insert(categoryFrames.Misc,
+    createToggleRowFrame("Anti-Fling", true, function() return AntiFling_Enabled end, AntiFling_Enable, AntiFling_Disable, function() return keyBinds.antiFling end, function(k) keyBinds.antiFling=k end)
+)
+table.insert(categoryFrames.Misc,
     createToggleRowFrame("Auto Pickup Money", true, function() return AutoPickupMoney_Enabled end, AutoPickupMoney_Enable, AutoPickupMoney_Disable, function() return keyBinds.autoPickupMoney end, function(k) keyBinds.autoPickupMoney=k end)
 )
 table.insert(categoryFrames.Misc,
@@ -2646,6 +3392,20 @@ table.insert(categoryFrames.Misc,
 )
 table.insert(categoryFrames.Misc,
     createToggleRowFrame("Auto Open Doors", true, function() return OpenNearbyDoors_Enabled end, OpenNearbyDoors_Enable, OpenNearbyDoors_Disable, function() return keyBinds.openNearbyDoors end, function(k) keyBinds.openNearbyDoors=k end)
+)
+
+-- Fling Category
+--table.insert(categoryFrames.Fling,
+ --   createToggleRowFrame("Fling", true, function() return Fling_Enabled end, Fling_Enable, Fling_Disable, function() return keyBinds.fling end, function(k) keyBinds.fling=k end)
+--)
+--table.insert(categoryFrames.Fling, createFlingTPTargetRowFrame()) -- Pole tekstowe na nick (bez zmian)
+--table.insert(categoryFrames.Fling,
+--   createToggleRowFrame("Fling TP To Target", true, function() return FlingTP_Enabled end, FlingTP_Enable, FlingTP_Disable, function() return keyBinds.flingTp end, function(k) keyBinds.flingTp=k end)
+--)
+
+-- Rage Category
+table.insert(categoryFrames.Rage,
+    createToggleRowFrame("Ragebot", true, function() return Ragebot_Enabled end, Ragebot_Enable, Ragebot_Disable, function() return keyBinds.ragebot end, function(k) keyBinds.ragebot=k end)
 )
 
 -------------------------------------------------------------------------------
