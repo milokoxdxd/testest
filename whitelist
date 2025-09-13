@@ -28,7 +28,7 @@ local VALID_KEYS_HWID_MAP = {
         --["611C5FD1-17E8-4076-8EDD-AA2FDD62FFB7"] = true    -- Example: Replace with actual HWID
     --},
     ["sanderkeyisyours"] = {
-        ["611C5FD1-17E8-4076-8EDD-AA2FDD62FFB7"] = true    -- Example: Replace with actual HWID
+        ["727cfc49-6c58-4751-ae62-04c7367eca17"] = true    -- Example: Replace with actual HWID
     },
 
 }
