@@ -2302,8 +2302,6 @@ do -- Use a 'do' block to scope variables specific to invisibility
                 Duration = 5,
             });
         end)
-        -- We don't 'return' here in the global scope, just prevent the feature from enabling later if needed.
-        -- Or, set a flag to prevent enable/disable functions from working.
         Invis_Fixed = false -- Mark as incompatible
     end
 
@@ -2358,7 +2356,6 @@ do -- Use a 'do' block to scope variables specific to invisibility
 
         if Track then -- Stop the animation if it exists and is playing
              pcall(function() Track:Stop() end)
-             -- Track = nil -- Keep track loaded unless character changes
         end
 
         -- Restore camera subject only if Humanoid is valid
@@ -2407,18 +2404,14 @@ do -- Use a 'do' block to scope variables specific to invisibility
             Track = nil
         end
 
-        -- Poczekaj bardzo krótko, aby dać czas na załadowanie podstawowych elementów
         task.wait() -- Daje silnikowi jeden cykl na aktualizację
 
         UpdateCharacterReferences() -- Update refs to the new character
 
-        -- SPRAWDZENIE R6/R15 - Najpierw upewnij się, że Humanoid istnieje
         if not Humanoid then
-             -- Można dodać dłuższe oczekiwanie, jeśli Humanoid pojawia się z opóźnieniem
              task.wait(0.5) -- Dodatkowe oczekiwanie
              UpdateCharacterReferences() -- Spróbuj ponownie
              if not Humanoid then
-                  -- Zdecyduj co robić - na razie zablokujemy, aby uniknąć błędów
                   Invis_Fixed = false
                   if InvisEnabled then Invis_Disable() end
                   pcall(function() StarterGui:SetCore("SendNotification", {Title = "Invisibility Error", Text = "Could not verify character type.", Duration = 5}) end)
@@ -2426,26 +2419,20 @@ do -- Use a 'do' block to scope variables specific to invisibility
              end
         end
 
-        -- Teraz sprawdź RigType
         if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then
             Invis_Fixed = false
             if InvisEnabled then Invis_Disable() end -- Disable if it was active
             pcall(function() StarterGui:SetCore("SendNotification", {Title = "Invisibility Warning", Text = "Non-R6 Avatar detected (".. tostring(Humanoid.RigType) .."). Invisibility disabled.", Duration = 5}) end)
             return
         else
-            -- Wygląda na to, że jest R6
             Invis_Fixed = true -- Mark as compatible again
         end
 
-        -- Jeśli niewidzialność ma przetrwać respawn, włącz ją ponownie
         if InvisEnabled then
-            if HumanoidRootPart then -- Upewnij się, że HRP istnieje przed zmianą kamery
-                 workspace.CurrentCamera.CameraSubject = HumanoidRootPart -- Ensure camera subject is correct
-            else
-                 -- Można spróbować poczekać na HRP lub zrezygnować z ustawiania kamery
+            if HumanoidRootPart then
+                 workspace.CurrentCamera.CameraSubject = HumanoidRootPart
             end
-            LoadAndPrepareTrack() -- Załaduj animację na nowy humanoid
-            -- Pętla Heartbeat zajmie się resztą
+            LoadAndPrepareTrack()
         end
     end)
 
@@ -2454,13 +2441,12 @@ do -- Use a 'do' block to scope variables specific to invisibility
              pcall(function() Track:Stop() end)
              Track = nil
          end
-         -- Don't disable InvisEnabled here, let CharacterAdded handle re-enabling if needed
-         WarnLabel.Visible = false -- Hide warning as character is gone
+         WarnLabel.Visible = false
     end)
 
 
     -- Main loop
-    Heartbeat:Connect(function(_)
+    Heartbeat:Connect(function(deltaTime)
         -- Early exit conditions
         if not InvisEnabled or not Invis_Fixed then
             -- Ensure transparency is reset if script disabled unexpectedly while parts were transparent
@@ -2476,12 +2462,18 @@ do -- Use a 'do' block to scope variables specific to invisibility
         -- Check character validity *inside* the loop - CRITICAL for reset safety
         if not Character or not Humanoid or not HumanoidRootPart or not Humanoid:IsDescendantOf(workspace) or Humanoid.Health <= 0 then
             WarnLabel.Visible = false; -- Hide warning if character is invalid/dead
-            -- Don't disable InvisEnabled here, CharacterAdded/Removing handles state persistence
             return
         end
 
         -- Grounded check and warning label
         WarnLabel.Visible = not Grounded();
+
+        -- Nowe - Kontrola prędkości poprzez ręczne przesuwanie
+        local speed = 11
+        if Humanoid.MoveDirection.Magnitude > 0 then
+             local offset = Humanoid.MoveDirection * speed * deltaTime
+             HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + offset
+        end
 
         -- Store originals
         local OldCFrame = HumanoidRootPart.CFrame;
@@ -2549,13 +2541,11 @@ do -- Use a 'do' block to scope variables specific to invisibility
     end)
 
     -- Expose Enable/Disable functions globally if needed by the UI
-    -- These need to be defined *after* the internal functions they call
     _G.Invis_Enable = Invis_Enable -- Or use the method your UI framework expects
     _G.Invis_Disable = Invis_Disable
     _G.IsInvisEnabled = function() return InvisEnabled end -- Function for UI state checking
 
 end -- End of invisibility 'do' block
--------------------------------------------------------------------------------
 
 --[[
 Remember to replace the Invisibility entry in your UI creation section (categoryFrames.Visuals)
