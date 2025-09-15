@@ -1206,35 +1206,52 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 -- Zmienne lokalne
-local Noclip_Enabled = false
-local Noclip_Connection = nil
 local LocalPlayer = Players.LocalPlayer
+local Noclip_Connection = nil
+local Noclip_Enabled = false
+local originalCollisions = {} -- Tabela do przechowywania oryginalnych stanów kolizji
 
 -- Funkcja włączająca Noclip
 local function Noclip_Enable()
     if Noclip_Enabled then
         return
     end
+
     Noclip_Enabled = true
 
-    -- Tworzymy pętlę, która będzie działać co klatkę
-    Noclip_Connection = RunService.Stepped:Connect(function()
-        -- Sprawdzamy dodatkowo w pętli, czy funkcja nadal powinna być aktywna
-        if not Noclip_Enabled then
-            return
-        end
-
-        local char = LocalPlayer.Character
-        if char then
-            -- Pętla przechodząca przez wszystkie części potomne postaci
-            for _, part in pairs(char:GetDescendants()) do
-                -- Jeśli część jest typu 'BasePart' i ma włączoną kolizję, wyłączamy ją
-                if part:IsA("BasePart") and part.CanCollide then
+    -- Zapisujemy stan kolizji przed wyłączeniem
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                -- Zapisujemy tylko te części, które miały kolizję
+                if part.CanCollide then
+                    originalCollisions[part] = true
                     part.CanCollide = false
                 end
             end
         end
-    end)
+    end
+
+    -- Tworzymy pętlę, która będzie działać co klatkę
+    if not Noclip_Connection then
+        Noclip_Connection = RunService.RenderStepped:Connect(function()
+            -- Sprawdzamy, czy funkcja nadal powinna być aktywna
+            if not Noclip_Enabled then
+                return
+            end
+            
+            -- W pętli upewniamy się, że kolizja jest wyłączona
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
 end
 
 -- Funkcja wyłączająca Noclip
@@ -1242,25 +1259,30 @@ local function Noclip_Disable()
     if not Noclip_Enabled then
         return
     end
+
     Noclip_Enabled = false
 
-    -- Rozłączamy pętlę, aby przestała działać
+    -- Rozłączamy pętlę
     if Noclip_Connection then
         Noclip_Connection:Disconnect()
         Noclip_Connection = nil
     end
 
-    -- WAŻNE: Przywracamy kolizje po wyłączeniu Noclip
+    -- Przywracamy kolizje na podstawie zapisanego stanu
     local char = LocalPlayer.Character
     if char then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
-                -- Tutaj zakładamy, że domyślnie wszystkie części mają kolizję.
-                -- W prawdziwej grze może to wymagać bardziej złożonej logiki.
-                part.CanCollide = true
+                -- Sprawdzamy, czy dana część była zapisana
+                if originalCollisions[part] then
+                    part.CanCollide = true
+                end
             end
         end
     end
+
+    -- Czyścimy tabelę, aby była gotowa na następne użycie
+    originalCollisions = {}
 end
 
 --========================== Admin Check (Nowy - z Twojego kodu) ========================--
