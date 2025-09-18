@@ -2491,7 +2491,7 @@ do -- Use a 'do' block to scope variables specific to invisibility
         WarnLabel.Visible = not Grounded();
 
         -- Nowe - Kontrola prędkości poprzez ręczne przesuwanie
-        local speed = 11
+        local speed = 12
         if Humanoid.MoveDirection.Magnitude > 0 then
              local offset = Humanoid.MoveDirection * speed * deltaTime
              HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + offset
